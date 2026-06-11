@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-navy-900: #1B2A4A;
+  --color-navy-800: #243B5E;
+  --color-navy-700: #2E4C72;
+  --color-navy-600: #3B5D8A;
+  --color-navy-500: #4B6FA0;
+  --color-navy-400: #6B8DB8;
+  --color-navy-300: #8DA9CC;
+  --color-navy-200: #B5C8DE;
+  --color-navy-100: #D6E2F0;
+  --color-navy-50: #EDF3FA;
+  --color-amber-500: #F59E0B;
+  --color-amber-400: #FBBF24;
+  --color-amber-300: #FCD34D;
+  --color-amber-100: #FEF3C7;
+  --color-cream: #F8F9FA;
+}
+
+@layer base {
+  html, body {
+    @apply text-gray-900 bg-cream antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input, select, textarea, button { @apply text-base; }
+}
+
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+}
+.badge-scheduled { @apply bg-blue-100 text-blue-800; }
+.badge-in_progress { @apply bg-amber-100 text-amber-800; }
+.badge-completed { @apply bg-green-100 text-green-800; }
+.badge-cancelled { @apply bg-red-100 text-red-800; }
+.badge-draft { @apply bg-gray-100 text-gray-700; }
+.badge-sent { @apply bg-blue-100 text-blue-800; }
+.badge-paid { @apply bg-green-100 text-green-800; }
+.badge-overdue { @apply bg-red-100 text-red-800; }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fade-in 0.4s ease-out; }
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}

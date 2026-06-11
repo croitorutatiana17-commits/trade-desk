@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.output/
+.vinxi/
+
+# Environment — local secrets never go to git
+.env.development.local
+.env.local
+.env*.local
+
+# Convex generated (regenerated on deploy)
+convex/_generated/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
