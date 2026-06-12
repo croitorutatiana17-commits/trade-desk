@@ -3,15 +3,10 @@ import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
+import { nitro } from 'nitro/vite'
 
 export default defineConfig({
   server: { port: 3000, allowedHosts: true },
-  build: {
-    rollupOptions: {
-      // Exclude Deno-only Supabase Edge Functions from the Node.js/Vite build
-      external: [],
-    },
-  },
   plugins: [
     tailwindcss(),
     tsConfigPaths({ projects: ['./tsconfig.json'] }),
@@ -20,6 +15,7 @@ export default defineConfig({
         routeFileIgnorePattern: '(\\.\\.tsx$|settings\\.tsx$)',
       },
     }),
+    nitro(),
     viteReact(),
   ],
 })
