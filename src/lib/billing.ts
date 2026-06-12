@@ -98,6 +98,48 @@ export async function activateSubscription(subscriptionId: string, customerId: s
 
 // Get the preview URL for the current sandbox — Stripe redirects here
 export function getAppUrl(): string {
-  // Use the VITE_APP_URL if set, otherwise fall back to window.location.origin
   return (import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+
+// Call the stripe-checkout Supabase Edge Function
+export async function createStripeCheckoutSession(params: {
+  userEmail: string
+  userId: string
+  successUrl: string
+  cancelUrl: string
+}): Promise<string> {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(params),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Checkout failed')
+  return data.url as string
+}
+
+// Call the stripe-verify Supabase Edge Function
+export async function verifyStripeSession(sessionId: string): Promise<{
+  status: string
+  customerId: string
+  subscriptionId: string
+  currentPeriodEnd: number
+}> {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ sessionId }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Verification failed')
+  return data
 }

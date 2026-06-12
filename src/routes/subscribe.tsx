@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { useAuth, signOut } from '~/lib/auth'
-import { activateSubscription, getAppUrl } from '~/lib/billing'
-import { useAction } from 'convex/react'
-import { api } from '../../convex/_generated/api'
+import {
+  activateSubscription,
+  getAppUrl,
+  createStripeCheckoutSession,
+  verifyStripeSession,
+} from '~/lib/billing'
 
 export const Route = createFileRoute('/subscribe')({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -21,9 +24,6 @@ function SubscribePage() {
   const { user } = useAuth()
   const { session_id } = Route.useSearch()
 
-  const createCheckout = useAction(api.stripe.createCheckoutSession)
-  const verifySession = useAction(api.stripe.verifyCheckoutSession)
-
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(!!session_id)
   const [error, setError] = useState('')
@@ -33,10 +33,9 @@ function SubscribePage() {
     if (!session_id || !user) return
 
     setVerifying(true)
-    verifySession({ sessionId: session_id, userId: user.id })
+    verifyStripeSession(session_id)
       .then(async result => {
         await activateSubscription(result.subscriptionId, result.customerId)
-        // Small delay so auth state refreshes
         await new Promise(r => setTimeout(r, 600))
         navigate({ to: '/' })
       })
@@ -51,10 +50,9 @@ function SubscribePage() {
     if (!user) return
     setLoading(true)
     setError('')
-
     try {
       const appUrl = getAppUrl()
-      const url = await createCheckout({
+      const url = await createStripeCheckoutSession({
         userEmail: user.email ?? '',
         userId: user.id,
         successUrl: `${appUrl}/subscribe`,
@@ -67,7 +65,6 @@ function SubscribePage() {
     }
   }
 
-  // Loading / verifying state
   if (verifying) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -95,8 +92,6 @@ function SubscribePage() {
 
         {/* Pricing card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
-          {/* Price header */}
           <div className="p-6 text-center" style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #243B5E 100%)` }}>
             <p className="text-sm font-semibold text-white/60 uppercase tracking-widest mb-1">TradeDesk Pro</p>
             <div className="flex items-end justify-center gap-1">
@@ -106,7 +101,6 @@ function SubscribePage() {
             <p className="text-xs text-white/50 mt-1">Billed monthly · Cancel anytime</p>
           </div>
 
-          {/* Features */}
           <div className="p-5 space-y-3">
             {[
               'Unlimited jobs & customers',
@@ -127,14 +121,12 @@ function SubscribePage() {
             ))}
           </div>
 
-          {/* CTA */}
           <div className="px-5 pb-5 space-y-3">
             {error && (
               <div className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 border border-red-100">
                 {error}
               </div>
             )}
-
             <button
               onClick={handleSubscribe}
               disabled={loading}
@@ -152,21 +144,16 @@ function SubscribePage() {
                 </>
               )}
             </button>
-
-            <p className="text-center text-xs text-gray-400">
-              Secure payment via Stripe. Cancel anytime.
-            </p>
+            <p className="text-center text-xs text-gray-400">Secure payment via Stripe. Cancel anytime.</p>
           </div>
         </div>
 
-        {/* Sign out link */}
         <button
           onClick={async () => { await signOut(); navigate({ to: '/login' }) }}
           className="w-full text-center text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           Sign out
         </button>
-
       </div>
     </div>
   )

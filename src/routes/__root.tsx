@@ -4,12 +4,9 @@ import {
   useMatches, useNavigate,
 } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import appCss from '~/styles/app.css?url'
 import { AuthProvider, useAuth } from '~/lib/auth'
 import { useBilling } from '~/lib/billing'
-
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string)
 
 export const Route = createRootRouteWithContext()({
   head: () => ({
@@ -28,11 +25,9 @@ function RootLayout() {
     <html>
       <head><HeadContent /></head>
       <body>
-        <ConvexProvider client={convex}>
-          <AuthProvider>
-            <AppShell />
-          </AuthProvider>
-        </ConvexProvider>
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
         <Scripts />
       </body>
     </html>
@@ -57,7 +52,7 @@ function AppShell() {
     if (!user && !isAuthRoute) navigate({ to: '/login' })
   }, [user, authLoading, isAuthRoute, navigate])
 
-  // Billing gate — redirect to paywall when trial expired
+  // Billing gate
   useEffect(() => {
     if (billing.status === 'loading' || isAuthRoute) return
     if (billing.isBlocked) navigate({ to: '/subscribe', search: { session_id: undefined } })
@@ -73,7 +68,6 @@ function AppShell() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
-      {/* Trial countdown banner — shown on all app pages during trial */}
       {!isAuthRoute && user && billing.status === 'trialing' && (
         <TrialBanner daysLeft={billing.trialDaysLeft} endsAt={billing.trialEndsAt} />
       )}
@@ -88,7 +82,6 @@ function AppShell() {
 function TrialBanner({ daysLeft, endsAt }: { daysLeft: number; endsAt: Date | null }) {
   const navigate = useNavigate()
   const isUrgent = daysLeft <= 3
-
   const formattedDate = endsAt
     ? endsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null
@@ -109,7 +102,11 @@ function TrialBanner({ daysLeft, endsAt }: { daysLeft: number; endsAt: Date | nu
             : daysLeft === 1
             ? '1 day left in your free trial'
             : `${daysLeft} days left in your free trial`}
-          {formattedDate && <span className={`text-xs ml-1 ${isUrgent ? 'text-red-500' : 'text-amber-600'}`}>(ends {formattedDate})</span>}
+          {formattedDate && (
+            <span className={`text-xs ml-1 ${isUrgent ? 'text-red-500' : 'text-amber-600'}`}>
+              (ends {formattedDate})
+            </span>
+          )}
         </p>
       </div>
       <button
