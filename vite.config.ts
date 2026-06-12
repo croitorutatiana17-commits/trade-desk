@@ -6,6 +6,12 @@ import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
   server: { port: 3000, allowedHosts: true },
+  build: {
+    rollupOptions: {
+      // Exclude Deno-only Supabase Edge Functions from the Node.js/Vite build
+      external: [],
+    },
+  },
   plugins: [
     tailwindcss(),
     tsConfigPaths({ projects: ['./tsconfig.json'] }),
