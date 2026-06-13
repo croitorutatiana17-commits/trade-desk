@@ -3,10 +3,11 @@ import {
   createRootRouteWithContext, Link,
   useMatches, useNavigate,
 } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { Component, type ReactNode, useEffect } from 'react'
 import appCss from '~/styles/app.css?url'
 import { AuthProvider, useAuth } from '~/lib/auth'
 import { useBilling } from '~/lib/billing'
+import { isSupabaseConfigured } from '~/lib/supabase'
 
 export const Route = createRootRouteWithContext()({
   head: () => ({
@@ -20,14 +21,62 @@ export const Route = createRootRouteWithContext()({
   component: RootLayout,
 })
 
+// ── Error Boundary ──────────────────────────────────────────────────────────
+interface EBState { hasError: boolean; message: string }
+class ErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, message: '' }
+  }
+  static getDerivedStateFromError(err: unknown): EBState {
+    return { hasError: true, message: err instanceof Error ? err.message : String(err) }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }}>
+          <div style={{ maxWidth: 480, padding: 32, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Something went wrong</h1>
+            <p style={{ color: '#6b7280', marginBottom: 24, lineHeight: 1.6 }}>
+              {this.state.message || 'An unexpected error occurred. Please try refreshing the page.'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ background: '#1e3a5f', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 }}
+            >
+              Reload page
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+// ── Misconfiguration banner ─────────────────────────────────────────────────
+function MissingEnvBanner() {
+  if (isSupabaseConfigured) return null
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#dc2626', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+      ⚠️ Missing environment variables: add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel project settings, then redeploy.
+    </div>
+  )
+}
+
+// ── Root layout ─────────────────────────────────────────────────────────────
 function RootLayout() {
   return (
     <html>
       <head><HeadContent /></head>
       <body>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <MissingEnvBanner />
+            <AppShell />
+          </AuthProvider>
+        </ErrorBoundary>
         <Scripts />
       </body>
     </html>
