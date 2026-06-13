@@ -1,14 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+// In local dev, Vite exposes VITE_SUPABASE_URL via import.meta.env.
+// On Vercel (SSR + SPA), use unprefixed SUPABASE_URL via process.env.
+const supabaseUrl =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  process.env.SUPABASE_URL
+
+const supabaseAnonKey =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+  process.env.SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // During SSR on Vercel the env vars must be present. Surface a clear error
-  // rather than letting createClient throw an opaque internal exception.
   console.error(
     '[TradeDesk] Missing Supabase environment variables.\n' +
-    'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel project settings.',
+    'Add SUPABASE_URL and SUPABASE_ANON_KEY to your Vercel project settings.',
   )
 }
 

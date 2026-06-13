@@ -60,7 +60,7 @@ function MissingEnvBanner() {
   if (isSupabaseConfigured) return null
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#dc2626', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
-      ⚠️ Missing environment variables: add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel project settings, then redeploy.
+      ⚠️ Missing environment variables: add SUPABASE_URL and SUPABASE_ANON_KEY in Vercel project settings, then redeploy.
     </div>
   )
 }

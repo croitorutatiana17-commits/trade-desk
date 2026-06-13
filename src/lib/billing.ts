@@ -96,13 +96,21 @@ export async function activateSubscription(subscriptionId: string, customerId: s
   if (error) throw error
 }
 
-// Get the preview URL for the current sandbox — Stripe redirects here
+// Get the app URL for Stripe redirects — prefers explicit env var, falls back to current origin
 export function getAppUrl(): string {
-  return (import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin
+  const explicit =
+    (import.meta.env.VITE_APP_URL as string | undefined) ||
+    process.env.APP_URL
+  return explicit || (typeof window !== 'undefined' ? window.location.origin : '')
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+// Read Supabase creds — support both VITE_ (Vite dev) and unprefixed (Vercel)
+const SUPABASE_URL =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  process.env.SUPABASE_URL || ''
+const SUPABASE_ANON_KEY =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+  process.env.SUPABASE_ANON_KEY || ''
 
 // Call the stripe-checkout Supabase Edge Function
 export async function createStripeCheckoutSession(params: {
