@@ -11,6 +11,11 @@ export default defineConfig({
     tailwindcss(),
     tsConfigPaths({ projects: ['./tsconfig.json'] }),
     tanstackStart({
+      // Disable SSR — this app is fully client-side (Supabase auth + queries).
+      // SSR caused HTTPError because Supabase's getSession() makes real
+      // network requests during server-side render that Nitro's ofetch
+      // intercepts and throws as unhandled HTTPError.
+      spa: { enabled: true },
       routes: {
         routeFileIgnorePattern: '(\\.\\.tsx$|settings\\.tsx$)',
       },
