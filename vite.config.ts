@@ -7,6 +7,17 @@ import { nitro } from 'nitro/vite'
 
 export default defineConfig({
   server: { port: 3000, allowedHosts: true },
+
+  // Statically replace process.env.* at build time so unprefixed env vars
+  // (set in Vercel without VITE_ prefix) are inlined into the client bundle.
+  // This makes both VITE_SUPABASE_URL and SUPABASE_URL work regardless of
+  // which one is set in the deployment environment.
+  define: {
+    'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL ?? ''),
+    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''),
+    'process.env.APP_URL': JSON.stringify(process.env.APP_URL ?? ''),
+  },
+
   plugins: [
     tailwindcss(),
     tsConfigPaths({ projects: ['./tsconfig.json'] }),
