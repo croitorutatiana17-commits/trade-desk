@@ -77,11 +77,11 @@ function AppShell() {
   }, [user, authLoading, isAuthRoute, navigate])
 
   useEffect(() => {
-    if (billing.status === 'loading' || isAuthRoute) return
+    if (!user || billing.status === 'loading' || isAuthRoute) return
     if (billing.isBlocked) navigate('/subscribe')
-  }, [billing.status, billing.isBlocked, isAuthRoute, navigate])
+  }, [user, billing.status, billing.isBlocked, isAuthRoute, navigate])
 
-  if (authLoading || billing.status === 'loading') {
+  if (authLoading || (user && billing.status === 'loading')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-8 h-8 border-2 border-gray-200 border-t-amber-500 rounded-full animate-spin" />
