@@ -3,9 +3,6 @@
 // Deploy: supabase functions deploy stripe-checkout --no-verify-jwt
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!)
-const PRICE_ID = Deno.env.get('STRIPE_PRICE_ID')!
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,9 +14,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+    const priceId = Deno.env.get('STRIPE_PRICE_ID')
+
+    if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not set in Supabase secrets')
+    if (!priceId) throw new Error('STRIPE_PRICE_ID is not set in Supabase secrets')
+
+    const stripe = new Stripe(stripeKey)
     const { userEmail, userId, successUrl, cancelUrl } = await req.json()
 
-    // Find or create a Stripe customer
     const existing = await stripe.customers.list({ email: userEmail, limit: 1 })
     const customer = existing.data.length > 0
       ? existing.data[0]
@@ -31,7 +34,7 @@ Deno.serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       mode: 'subscription',
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl + '?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: cancelUrl,
       allow_promotion_codes: true,

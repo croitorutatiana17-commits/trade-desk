@@ -3,8 +3,6 @@
 // Deploy: supabase functions deploy stripe-verify --no-verify-jwt
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!)
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -16,6 +14,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+    if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not set in Supabase secrets')
+
+    const stripe = new Stripe(stripeKey)
     const { sessionId } = await req.json()
 
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
