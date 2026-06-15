@@ -1,13 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useJobs } from '~/lib/queries'
 import { STATUS_COLORS, STATUS_LABELS } from '~/data'
 import type { JobStatus } from '~/lib/database.types'
-
-export const Route = createFileRoute('/jobs')({
-  component: JobsPage,
-})
 
 const STATUS_TABS: { value: JobStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -16,7 +12,7 @@ const STATUS_TABS: { value: JobStatus | ''; label: string }[] = [
   { value: 'completed', label: 'Completed' },
 ]
 
-function JobsPage() {
+export default function JobsPage() {
   const { user } = useAuth()
   const { data: jobs, loading, error } = useJobs(user?.id)
   const [filter, setFilter] = useState<JobStatus | ''>('')
@@ -49,7 +45,6 @@ function JobsPage() {
           ))}
         </div>
 
-        {/* Loading skeleton */}
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
@@ -83,7 +78,7 @@ function JobsPage() {
         {!loading && !error && filtered.length > 0 && (
           <div className="space-y-2">
             {filtered.map(job => (
-              <Link key={job.id} to="/jobs/$jobId" params={{ jobId: job.id }}
+              <Link key={job.id} to={`/jobs/${job.id}`}
                 className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.99] transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">

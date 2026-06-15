@@ -1,9 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useJob, updateJobStatus, type JobStatus } from '~/lib/queries'
-
-export const Route = createFileRoute('/jobs/$jobId')({ component: JobDetailPage })
 
 const STATUS_FLOW: JobStatus[] = ['scheduled', 'in_progress', 'completed']
 const STATUS_COLORS: Record<string, string> = {
@@ -17,8 +15,8 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Completed', cancelled: 'Cancelled',
 }
 
-function JobDetailPage() {
-  const { jobId } = Route.useParams()
+export default function JobDetailPage() {
+  const { jobId } = useParams<{ jobId: string }>()
   const { user } = useAuth()
   const { data: job, loading, refetch } = useJob(jobId, user?.id)
 
@@ -68,7 +66,6 @@ function JobDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 max-w-lg mx-auto space-y-3 pb-10">
 
-        {/* Header */}
         <div className="flex items-center justify-between pt-2">
           <Link to="/jobs" className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm transition-all">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -101,7 +98,6 @@ function JobDetailPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           {status !== 'cancelled' && (
             <div className="space-y-2">
               <div className="flex gap-1.5">
@@ -115,7 +111,6 @@ function JobDetailPage() {
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-2 pt-1">
             {nextStatus && status !== 'cancelled' && (
               <button
@@ -148,7 +143,7 @@ function JobDetailPage() {
               </div>
             )}
             {(status === 'completed' || status === 'in_progress') && (
-              <Link to="/invoices/new" search={{ jobId }}
+              <Link to={`/invoices/new?jobId=${jobId}`}
                 className="flex items-center gap-1.5 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
                 style={{ backgroundColor: '#f59e0b' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -160,11 +155,10 @@ function JobDetailPage() {
           </div>
         </div>
 
-        {/* Customer */}
         {job.customers && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Customer</h2>
-            <Link to="/customers/$customerId" params={{ customerId: job.customers.id }}
+            <Link to={`/customers/${job.customers.id}`}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0" style={{ backgroundColor: '#1B2A4A' }}>
                 {job.customers.name[0]}
@@ -180,7 +174,6 @@ function JobDetailPage() {
           </div>
         )}
 
-        {/* Schedule */}
         {(job.scheduled_date || job.scheduled_time) && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Schedule</h2>
@@ -202,7 +195,6 @@ function JobDetailPage() {
           </div>
         )}
 
-        {/* Description */}
         {job.description && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-2">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Description</h2>
@@ -210,7 +202,6 @@ function JobDetailPage() {
           </div>
         )}
 
-        {/* Internal Notes */}
         {job.notes && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <button onClick={() => setShowNotes(!showNotes)}
@@ -233,9 +224,8 @@ function JobDetailPage() {
           </div>
         )}
 
-        {/* Create Invoice CTA */}
         {status !== 'cancelled' && (
-          <Link to="/invoices/new" search={{ jobId }}
+          <Link to={`/invoices/new?jobId=${jobId}`}
             className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-bold text-lg active:scale-[0.98] transition-all"
             style={{ backgroundColor: '#f59e0b', color: '#fff', boxShadow: '0 8px 24px rgba(245,158,11,0.3)' }}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -246,7 +236,6 @@ function JobDetailPage() {
         )}
       </div>
 
-      {/* Cancel modal */}
       {confirmCancel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/40" onClick={() => setConfirmCancel(false)}>
           <div className="w-full max-w-sm bg-white rounded-2xl p-6 space-y-4" onClick={e => e.stopPropagation()}>

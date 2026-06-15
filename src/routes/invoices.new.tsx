@@ -1,14 +1,7 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomers, useJob, createInvoice } from '~/lib/queries'
-
-export const Route = createFileRoute('/invoices/new')({
-  validateSearch: (s: Record<string, unknown>) => ({
-    jobId: typeof s.jobId === 'string' ? s.jobId : undefined,
-  }),
-  component: NewInvoicePage,
-})
 
 type LineItem = { id: string; description: string; quantity: number; unitPrice: number }
 
@@ -17,12 +10,12 @@ function genInvNum() {
   return `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`
 }
 
-function NewInvoicePage() {
+export default function NewInvoicePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { jobId } = Route.useSearch()
+  const [searchParams] = useSearchParams()
+  const jobId = searchParams.get('jobId') ?? undefined
 
-  // Load job info if coming from a job
   const { data: jobData } = useJob(jobId, user?.id)
   const { data: customers } = useCustomers(user?.id)
 
@@ -39,7 +32,6 @@ function NewInvoicePage() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
 
-  // Pre-fill from job
   const jobPreFilled = !!jobData
   const billedCustomerId = jobPreFilled ? (jobData.customer_id ?? '') : customerId
 
@@ -96,7 +88,7 @@ function NewInvoicePage() {
       if (err) { setError('Failed to send: ' + (err as any).message); return }
 
       setSent(true)
-      setTimeout(() => navigate({ to: '/invoices' }), 800)
+      setTimeout(() => navigate('/invoices'), 800)
     } finally {
       setSending(false)
     }
@@ -110,8 +102,7 @@ function NewInvoicePage() {
 
         <div className="flex items-center gap-3 pt-2">
           <Link
-            to={jobId ? '/jobs/$jobId' : '/invoices'}
-            params={jobId ? { jobId } : undefined}
+            to={jobId ? `/jobs/${jobId}` : '/invoices'}
             className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm transition-all shrink-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -126,11 +117,9 @@ function NewInvoicePage() {
 
         <form onSubmit={handleSend} className="space-y-3">
 
-          {/* Details */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Details</h2>
 
-            {/* Customer */}
             {jobPreFilled && jobData ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Bill to</label>
@@ -163,7 +152,6 @@ function NewInvoicePage() {
             </div>
           </div>
 
-          {/* Line Items */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Line Items</h2>
@@ -216,7 +204,6 @@ function NewInvoicePage() {
             })}
           </div>
 
-          {/* Tax & Totals */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tax & Totals</h2>
             <div className="flex items-center gap-3">
@@ -256,7 +243,6 @@ function NewInvoicePage() {
             </div>
           </div>
 
-          {/* Notes */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
               Notes <span className="text-gray-300 font-normal normal-case">· optional</span>
@@ -270,11 +256,9 @@ function NewInvoicePage() {
             <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>
           )}
 
-          {/* Submit */}
           <div className="flex gap-3 pt-1">
             <Link
-              to={jobId ? '/jobs/$jobId' : '/invoices'}
-              params={jobId ? { jobId } : undefined}
+              to={jobId ? `/jobs/${jobId}` : '/invoices'}
               className="flex items-center justify-center rounded-xl border-2 border-gray-200 px-5 py-4 text-gray-700 font-semibold hover:bg-gray-50 text-sm"
             >
               Cancel

@@ -1,22 +1,16 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '~/lib/auth'
-import { useCustomers } from '~/lib/queries'
-import { useCustomerStats } from '~/lib/queries'
+import { useCustomers, useCustomerStats } from '~/lib/queries'
 import type { CustomerRow } from '~/lib/database.types'
-
-export const Route = createFileRoute('/customers')({
-  component: CustomersPage,
-})
 
 function CustomerCard({ customer, userId }: { customer: CustomerRow; userId: string }) {
   const { jobCount, revenue, outstanding, loading } = useCustomerStats(customer.id, userId)
-  const initials = customer.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+  const initials = customer.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
 
   return (
     <Link
-      to="/customers/$customerId"
-      params={{ customerId: customer.id }}
+      to={`/customers/${customer.id}`}
       className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.99] transition-all"
     >
       <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0" style={{ backgroundColor: '#1B2A4A' }}>
@@ -49,7 +43,7 @@ function CustomerCard({ customer, userId }: { customer: CustomerRow; userId: str
   )
 }
 
-function CustomersPage() {
+export default function CustomersPage() {
   const { user } = useAuth()
   const { data: customers, loading, error } = useCustomers(user?.id)
   const [query, setQuery] = useState('')
@@ -99,7 +93,6 @@ function CustomersPage() {
 
         {query && <p className="text-xs text-gray-400 font-medium px-1">{filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{query}"</p>}
 
-        {/* Loading */}
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
@@ -116,12 +109,10 @@ function CustomersPage() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm text-red-600">{error}</div>
         )}
 
-        {/* Empty state */}
         {!loading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
@@ -134,7 +125,6 @@ function CustomersPage() {
           </div>
         )}
 
-        {/* List */}
         {!loading && !error && filtered.length > 0 && user && (
           <div className="space-y-2">
             {filtered.map(customer => (

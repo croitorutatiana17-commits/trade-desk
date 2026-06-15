@@ -1,25 +1,20 @@
-import {
-  HeadContent, Outlet, Scripts,
-  createRootRouteWithContext, Link,
-  useMatches, useNavigate,
-} from '@tanstack/react-router'
 import { Component, type ReactNode, useEffect } from 'react'
-import appCss from '~/styles/app.css?url'
+import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '~/lib/auth'
 import { useBilling } from '~/lib/billing'
 import { isSupabaseConfigured } from '~/lib/supabase'
 
-export const Route = createRootRouteWithContext()({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' },
-      { title: 'TradeDesk' },
-    ],
-    links: [{ rel: 'stylesheet', href: appCss }],
-  }),
-  component: RootLayout,
-})
+import Dashboard from '~/routes/index'
+import LoginPage from '~/routes/login'
+import SubscribePage from '~/routes/subscribe'
+import CustomersPage from '~/routes/customers'
+import CustomerProfilePage from '~/routes/customers.$customerId'
+import JobsPage from '~/routes/jobs'
+import NewJobPage from '~/routes/jobs.new'
+import JobDetailPage from '~/routes/jobs.$jobId'
+import InvoicesPage from '~/routes/invoices'
+import NewInvoicePage from '~/routes/invoices.new'
+import InvoiceDetailPage from '~/routes/invoices.$invoiceId'
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
 interface EBState { hasError: boolean; message: string }
@@ -65,46 +60,25 @@ function MissingEnvBanner() {
   )
 }
 
-// ── Root layout ─────────────────────────────────────────────────────────────
-function RootLayout() {
-  return (
-    <html>
-      <head><HeadContent /></head>
-      <body>
-        <ErrorBoundary>
-          <AuthProvider>
-            <MissingEnvBanner />
-            <AppShell />
-          </AuthProvider>
-        </ErrorBoundary>
-        <Scripts />
-      </body>
-    </html>
-  )
-}
-
 const AUTH_ROUTES = ['/login', '/subscribe']
 
 function AppShell() {
-  const matches = useMatches()
-  const last = matches[matches.length - 1]
-  const path = last?.id ?? '/'
+  const location = useLocation()
+  const path = location.pathname
   const isAuthRoute = AUTH_ROUTES.some(r => path === r || path.startsWith(r))
 
   const { user, loading: authLoading } = useAuth()
   const billing = useBilling()
   const navigate = useNavigate()
 
-  // Auth guard
   useEffect(() => {
     if (authLoading) return
-    if (!user && !isAuthRoute) navigate({ to: '/login' })
+    if (!user && !isAuthRoute) navigate('/login')
   }, [user, authLoading, isAuthRoute, navigate])
 
-  // Billing gate
   useEffect(() => {
     if (billing.status === 'loading' || isAuthRoute) return
-    if (billing.isBlocked) navigate({ to: '/subscribe', search: { session_id: undefined } })
+    if (billing.isBlocked) navigate('/subscribe')
   }, [billing.status, billing.isBlocked, isAuthRoute, navigate])
 
   if (authLoading || billing.status === 'loading') {
@@ -121,7 +95,20 @@ function AppShell() {
         <TrialBanner daysLeft={billing.trialDaysLeft} endsAt={billing.trialEndsAt} />
       )}
       <main className={isAuthRoute ? 'flex-1' : 'flex-1 pb-20'}>
-        <Outlet />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/subscribe" element={<SubscribePage />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/customers/:customerId" element={<CustomerProfilePage />} />
+          <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/jobs/new" element={<NewJobPage />} />
+          <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/invoices/new" element={<NewInvoicePage />} />
+          <Route path="/invoices/:invoiceId" element={<InvoiceDetailPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
       {!isAuthRoute && user && !billing.isBlocked && <Nav path={path} />}
     </div>
@@ -159,7 +146,7 @@ function TrialBanner({ daysLeft, endsAt }: { daysLeft: number; endsAt: Date | nu
         </p>
       </div>
       <button
-        onClick={() => navigate({ to: '/subscribe', search: { session_id: undefined } })}
+        onClick={() => navigate('/subscribe')}
         className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg text-white transition-colors"
         style={{ backgroundColor: isUrgent ? '#dc2626' : '#f59e0b' }}
       >
@@ -191,5 +178,16 @@ function Nav({ path }: { path: string }) {
         })}
       </div>
     </nav>
+  )
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <MissingEnvBanner />
+        <AppShell />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

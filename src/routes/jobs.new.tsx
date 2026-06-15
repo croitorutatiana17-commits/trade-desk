@@ -1,9 +1,7 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomers, createJob, createCustomer } from '~/lib/queries'
-
-export const Route = createFileRoute('/jobs/new')({ component: NewJobPage })
 
 const JOB_TYPES = [
   { value: 'Plumbing', label: 'Plumbing' },
@@ -16,7 +14,7 @@ const JOB_TYPES = [
   { value: 'Other', label: 'Other' },
 ]
 
-function NewJobPage() {
+export default function NewJobPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { data: customers } = useCustomers(user?.id)
@@ -24,7 +22,6 @@ function NewJobPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Customer picker
   const [customerQuery, setCustomerQuery] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -34,7 +31,6 @@ function NewJobPage() {
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Job fields
   const [title, setTitle] = useState('')
   const [jobType, setJobType] = useState('')
   const [description, setDescription] = useState('')
@@ -51,7 +47,6 @@ function NewJobPage() {
       )
     : customers.slice(0, 8)
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -81,7 +76,6 @@ function NewJobPage() {
     try {
       let customerId: string | undefined
 
-      // Create new customer if needed
       if (isNewCustomer && newCustomerName.trim()) {
         const { data: newCust, error: custErr } = await createCustomer({
           user_id: user.id,
@@ -109,7 +103,7 @@ function NewJobPage() {
       })
 
       if (jobErr) { setError('Failed to save job: ' + (jobErr as any).message); return }
-      navigate({ to: '/jobs/$jobId', params: { jobId: job!.id } })
+      navigate(`/jobs/${job!.id}`)
     } finally {
       setSaving(false)
     }
@@ -121,7 +115,6 @@ function NewJobPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 max-w-lg mx-auto space-y-4 pb-10 animate-fade-in">
 
-        {/* Header */}
         <div className="flex items-center gap-3 pt-2">
           <Link to="/jobs" className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm transition-all">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -271,7 +264,6 @@ function NewJobPage() {
             <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-1">
             <Link to="/jobs" className="flex items-center justify-center rounded-xl border-2 border-gray-200 px-5 py-4 text-gray-700 font-semibold hover:bg-gray-50 text-sm transition-colors">
               Cancel

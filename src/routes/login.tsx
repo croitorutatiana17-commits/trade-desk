@@ -1,12 +1,8 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, useAuth } from '~/lib/auth'
 
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
-})
-
-function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()
   const [mode, setMode] = useState<'login' | 'signup'>('login')
@@ -19,7 +15,7 @@ function LoginPage() {
   // Already logged in → redirect to home
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: '/' })
+      navigate('/')
     }
   }, [user, loading, navigate])
 
@@ -33,7 +29,7 @@ function LoginPage() {
       if (mode === 'login') {
         const { error } = await signInWithEmail(email, password)
         if (error) { setError(error.message); return }
-        navigate({ to: '/' })
+        navigate('/')
       } else {
         const { error } = await signUpWithEmail(email, password)
         if (error) { setError(error.message); return }

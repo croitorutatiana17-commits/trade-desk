@@ -1,13 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useInvoices } from '~/lib/queries'
 import { STATUS_COLORS, STATUS_LABELS } from '~/data'
 import type { InvoiceStatus } from '~/lib/database.types'
-
-export const Route = createFileRoute('/invoices')({
-  component: InvoicesPage,
-})
 
 const STATUS_TABS: { value: InvoiceStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -21,7 +17,7 @@ function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function InvoicesPage() {
+export default function InvoicesPage() {
   const { user } = useAuth()
   const { data: invoices, loading, error } = useInvoices(user?.id)
   const [filter, setFilter] = useState<InvoiceStatus | ''>('')
@@ -49,14 +45,13 @@ function InvoicesPage() {
             <h1 className="text-xl font-bold" style={{ color: '#1B2A4A' }}>Invoices</h1>
             <p className="text-sm text-gray-400">{allInvoices.length} total</p>
           </div>
-          <Link to="/invoices/new" search={{ jobId: undefined }}
+          <Link to="/invoices/new"
             className="text-sm font-semibold px-4 py-2 rounded-xl text-white transition-colors hover:opacity-90"
             style={{ backgroundColor: '#1B2A4A' }}>
             + New
           </Link>
         </div>
 
-        {/* Outstanding banner */}
         {!loading && outstanding > 0 && (
           <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #243B5E 100%)' }}>
             <div>
@@ -71,7 +66,6 @@ function InvoicesPage() {
           </div>
         )}
 
-        {/* Filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {STATUS_TABS.map(tab => {
             const count = tabCounts[tab.value] ?? 0
@@ -91,7 +85,6 @@ function InvoicesPage() {
           })}
         </div>
 
-        {/* Loading skeleton */}
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
@@ -111,7 +104,6 @@ function InvoicesPage() {
 
         {error && <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm text-red-600">{error}</div>}
 
-        {/* Empty state */}
         {!loading && !error && sorted.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
@@ -124,7 +116,6 @@ function InvoicesPage() {
           </div>
         )}
 
-        {/* Invoice list */}
         {!loading && !error && sorted.length > 0 && (
           <div className="space-y-2">
             {sorted.map(inv => {
@@ -132,7 +123,7 @@ function InvoicesPage() {
               const isDraft = inv.status === 'draft'
               const lineItems = (inv as any).invoice_line_items as Array<{ description: string }> | undefined
               return (
-                <Link key={inv.id} to="/invoices/$invoiceId" params={{ invoiceId: inv.id }}
+                <Link key={inv.id} to={`/invoices/${inv.id}`}
                   className="block bg-white rounded-2xl p-4 shadow-sm border hover:shadow-md active:scale-[0.99] transition-all"
                   style={{ borderColor: isOverdue ? '#fecaca' : '#f3f4f6' }}>
                   <div className="flex items-start gap-3">
@@ -152,7 +143,7 @@ function InvoicesPage() {
                         }
                       </p>
                       {lineItems && lineItems.length > 0 && (
-                        <p className="text-xs text-gray-400 mt-1 truncate">{lineItems.map(l => l.description).join(' · ')}</p>
+                        <p className="text-xs text-gray-400 mt-1 truncate">{lineItems.map((l: { description: string }) => l.description).join(' · ')}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0 flex flex-col items-end gap-2">

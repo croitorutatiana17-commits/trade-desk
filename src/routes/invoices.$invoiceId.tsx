@@ -1,9 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useInvoice, updateInvoiceStatus, type InvoiceStatus } from '~/lib/queries'
-
-export const Route = createFileRoute('/invoices/$invoiceId')({ component: InvoiceDetailPage })
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -19,8 +17,8 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function InvoiceDetailPage() {
-  const { invoiceId } = Route.useParams()
+export default function InvoiceDetailPage() {
+  const { invoiceId } = useParams<{ invoiceId: string }>()
   const { user } = useAuth()
   const { data: invoice, loading, refetch } = useInvoice(invoiceId, user?.id)
 
@@ -79,7 +77,6 @@ function InvoiceDetailPage() {
           <span className="text-xs font-mono text-gray-400">{invoice.invoice_number}</span>
         </div>
 
-        {/* Status card */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[status]}`}>
@@ -100,7 +97,6 @@ function InvoiceDetailPage() {
             )}
           </div>
 
-          {/* Status actions */}
           <div className="flex gap-2">
             {status === 'draft' && (
               <button onClick={() => handleStatus('sent')} disabled={updating}
@@ -121,7 +117,6 @@ function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Line Items */}
         {lineItems.length > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Line Items</h2>
@@ -142,7 +137,6 @@ function InvoiceDetailPage() {
           </div>
         )}
 
-        {/* Totals */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Subtotal</span>
@@ -167,16 +161,15 @@ function InvoiceDetailPage() {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2">
           {invoice.customers && (
-            <Link to="/customers/$customerId" params={{ customerId: invoice.customers.id }}
+            <Link to={`/customers/${invoice.customers.id}`}
               className="flex-1 rounded-xl border-2 border-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 text-center transition-colors">
               View Customer
             </Link>
           )}
           {invoice.job_id && (
-            <Link to="/jobs/$jobId" params={{ jobId: invoice.job_id }}
+            <Link to={`/jobs/${invoice.job_id}`}
               className="flex-1 rounded-xl py-3 text-sm font-semibold text-white text-center transition-colors hover:opacity-90"
               style={{ backgroundColor: '#1B2A4A' }}>
               View Job

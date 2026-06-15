@@ -1,9 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomer, useCustomerStats, updateCustomerNotes } from '~/lib/queries'
-
-export const Route = createFileRoute('/customers/$customerId')({ component: CustomerProfilePage })
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: 'bg-blue-50 text-blue-700', in_progress: 'bg-amber-50 text-amber-700',
@@ -16,8 +14,8 @@ const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft', sent: 'Sent', paid: 'Paid', overdue: 'Overdue',
 }
 
-function CustomerProfilePage() {
-  const { customerId } = Route.useParams()
+export default function CustomerProfilePage() {
+  const { customerId } = useParams<{ customerId: string }>()
   const { user } = useAuth()
   const { data: customer, loading: custLoading } = useCustomer(customerId, user?.id)
   const { loading: statsLoading, jobCount, revenue, outstanding, jobs, invoices } = useCustomerStats(customerId, user?.id)
@@ -173,7 +171,7 @@ function CustomerProfilePage() {
               {sortedJobs.length === 0 ? (
                 <div className="py-10 text-center text-sm text-gray-400">No jobs yet</div>
               ) : sortedJobs.map(job => (
-                <Link key={job.id} to="/jobs/$jobId" params={{ jobId: job.id }}
+                <Link key={job.id} to={`/jobs/${job.id}`}
                   className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{job.title}</p>
@@ -199,7 +197,7 @@ function CustomerProfilePage() {
               {sortedInvoices.length === 0 ? (
                 <div className="py-10 text-center text-sm text-gray-400">No invoices yet</div>
               ) : sortedInvoices.map(inv => (
-                <Link key={inv.id} to="/invoices/$invoiceId" params={{ invoiceId: inv.id }}
+                <Link key={inv.id} to={`/invoices/${inv.id}`}
                   className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{inv.invoice_number}</p>
@@ -259,7 +257,7 @@ function CustomerProfilePage() {
             </svg>
             <span className="text-sm font-semibold text-gray-700">New Job</span>
           </Link>
-          <Link to="/invoices/new" search={{ jobId: undefined }}
+          <Link to="/invoices/new"
             className="flex flex-col items-center gap-2 bg-white rounded-2xl py-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all">
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />

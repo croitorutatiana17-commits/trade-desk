@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth, signOut } from '~/lib/auth'
 import {
@@ -8,27 +8,20 @@ import {
   verifyStripeSession,
 } from '~/lib/billing'
 
-export const Route = createFileRoute('/subscribe')({
-  validateSearch: (s: Record<string, unknown>) => ({
-    session_id: typeof s.session_id === 'string' ? s.session_id : undefined,
-  }),
-  component: SubscribePage,
-})
-
 const NAVY = '#1B2A4A'
 const PRICE = '$19'
 const PERIOD = 'month'
 
-function SubscribePage() {
+export default function SubscribePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { session_id } = Route.useSearch()
+  const [searchParams] = useSearchParams()
+  const session_id = searchParams.get('session_id') ?? undefined
 
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(!!session_id)
   const [error, setError] = useState('')
 
-  // Handle return from Stripe Checkout
   useEffect(() => {
     if (!session_id || !user) return
 
@@ -37,10 +30,10 @@ function SubscribePage() {
       .then(async result => {
         await activateSubscription(result.subscriptionId, result.customerId)
         await new Promise(r => setTimeout(r, 600))
-        navigate({ to: '/' })
+        navigate('/')
       })
       .catch(err => {
-        setError('Payment verification failed: ' + err.message)
+        setError('Payment verification failed: ' + (err as Error).message)
         setVerifying(false)
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,8 +52,8 @@ function SubscribePage() {
         cancelUrl: `${appUrl}/subscribe`,
       })
       window.location.href = url
-    } catch (err: any) {
-      setError(err.message ?? 'Failed to start checkout')
+    } catch (err: unknown) {
+      setError((err as Error).message ?? 'Failed to start checkout')
       setLoading(false)
     }
   }
@@ -149,7 +142,7 @@ function SubscribePage() {
         </div>
 
         <button
-          onClick={async () => { await signOut(); navigate({ to: '/login' }) }}
+          onClick={async () => { await signOut(); navigate('/login') }}
           className="w-full text-center text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           Sign out

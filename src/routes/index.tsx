@@ -1,8 +1,6 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, signOut } from '~/lib/auth'
 import { useDashboardStats } from '~/lib/queries'
-
-export const Route = createFileRoute('/')({ component: Dashboard })
 
 const NAVY = '#1B2A4A'
 const STATUS_COLORS: Record<string, string> = {
@@ -28,7 +26,7 @@ function StatCard({ label, value, sub, green }: { label: string; value: string; 
   )
 }
 
-function Dashboard() {
+export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { data: stats, loading } = useDashboardStats(user?.id)
@@ -54,7 +52,7 @@ function Dashboard() {
             </p>
           </div>
           <button
-            onClick={async () => { await signOut(); navigate({ to: '/login' }) }}
+            onClick={async () => { await signOut(); navigate('/login') }}
             className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
             style={{ backgroundColor: NAVY }}
             title="Sign out"
@@ -65,7 +63,7 @@ function Dashboard() {
 
         {/* New Job CTA */}
         <button
-          onClick={() => navigate({ to: '/jobs/new' })}
+          onClick={() => navigate('/jobs/new')}
           className="w-full text-white rounded-2xl py-4 font-bold text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           style={{ backgroundColor: '#f59e0b', boxShadow: '0 8px 24px rgba(245,158,11,0.3)' }}
         >
@@ -112,7 +110,7 @@ function Dashboard() {
             <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100">
               <p className="text-gray-500 text-sm">No jobs scheduled today</p>
               <button
-                onClick={() => navigate({ to: '/jobs/new' })}
+                onClick={() => navigate('/jobs/new')}
                 className="mt-2 text-sm font-semibold"
                 style={{ color: NAVY }}
               >
@@ -124,8 +122,7 @@ function Dashboard() {
               {todayJobs.map(job => (
                 <Link
                   key={job.id}
-                  to="/jobs/$jobId"
-                  params={{ jobId: job.id }}
+                  to={`/jobs/${job.id}`}
                   className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -167,12 +164,11 @@ function Dashboard() {
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
               {recentCustomers.slice(0, 5).map(c => {
-                const initials = c.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+                const initials = c.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
                 return (
                   <Link
                     key={c.id}
-                    to="/customers/$customerId"
-                    params={{ customerId: c.id }}
+                    to={`/customers/${c.id}`}
                     className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors"
                   >
                     <div
