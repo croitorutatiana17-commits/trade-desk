@@ -128,7 +128,7 @@ export default function NewInvoicePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Bill to</label>
                 <div className="flex items-center gap-2 border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
                   <span className="text-sm font-semibold text-gray-800">
-                    {jobData.customers?.name ?? 'Customer'}
+                    {jobData.customers?.name ?? customers.find(c => c.id === jobData.customer_id)?.name ?? 'Customer'}
                   </span>
                   <span className="ml-auto text-xs text-gray-400 truncate">via job: {jobData.title}</span>
                 </div>

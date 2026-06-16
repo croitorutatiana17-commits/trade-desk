@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '~/lib/auth'
-import { useCustomers, useCustomerStats } from '~/lib/queries'
+import { useCustomers, useCustomerStats, createCustomer } from '~/lib/queries'
 import type { CustomerRow } from '~/lib/database.types'
 
 function CustomerCard({ customer, userId }: { customer: CustomerRow; userId: string }) {
@@ -47,6 +47,24 @@ export default function CustomersPage() {
   const { user } = useAuth()
   const { data: customers, loading, error } = useCustomers(user?.id)
   const [query, setQuery] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [addName, setAddName] = useState('')
+  const [addEmail, setAddEmail] = useState('')
+  const [addPhone, setAddPhone] = useState('')
+  const [addSaving, setAddSaving] = useState(false)
+  const [addError, setAddError] = useState('')
+
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !addName.trim()) return
+    setAddSaving(true)
+    setAddError('')
+    const { error: err } = await createCustomer({ user_id: user.id, name: addName.trim(), email: addEmail.trim() || undefined, phone: addPhone.trim() || undefined })
+    setAddSaving(false)
+    if (err) { setAddError('Failed to save: ' + err.message); return }
+    setShowAdd(false)
+    setAddName(''); setAddEmail(''); setAddPhone('')
+  }
 
   const filtered = (customers ?? []).filter(c => {
     if (!query) return true
@@ -67,10 +85,26 @@ export default function CustomersPage() {
             <h1 className="text-xl font-bold" style={{ color: '#1B2A4A' }}>Customers</h1>
             <p className="text-sm text-gray-400">{(customers ?? []).length} total</p>
           </div>
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm" style={{ backgroundColor: '#1B2A4A' }}>
+          <button onClick={() => setShowAdd(true)} className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm" style={{ backgroundColor: '#1B2A4A' }}>
             +
           </button>
         </div>
+
+        {showAdd && (
+          <form onSubmit={handleAddCustomer} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold text-gray-700">New Customer</p>
+              <button type="button" onClick={() => { setShowAdd(false); setAddError('') }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+            </div>
+            <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="Full name *" required className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm focus:border-amber-400 focus:outline-none" />
+            <input value={addEmail} onChange={e => setAddEmail(e.target.value)} type="email" placeholder="Email address" className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm focus:border-amber-400 focus:outline-none" />
+            <input value={addPhone} onChange={e => setAddPhone(e.target.value)} placeholder="Phone number" className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm focus:border-amber-400 focus:outline-none" />
+            {addError && <p className="text-sm text-red-600">{addError}</p>}
+            <button type="submit" disabled={addSaving || !addName.trim()} className="w-full rounded-xl py-3 text-white font-bold text-sm disabled:opacity-50" style={{ backgroundColor: '#1B2A4A' }}>
+              {addSaving ? 'Saving…' : 'Add Customer'}
+            </button>
+          </form>
+        )}
 
         {/* Search */}
         <div className="relative">

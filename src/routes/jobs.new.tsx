@@ -170,7 +170,7 @@ export default function NewJobPage() {
                 {selectedCustomer && (
                   <p className="mt-1.5 text-xs text-green-600 font-medium">✓ {selectedCustomer.name} selected</p>
                 )}
-                <button type="button" onClick={() => { setIsNewCustomer(true); setCustomerQuery(''); setSelectedCustomer(null) }}
+                <button type="button" onClick={() => { setIsNewCustomer(true); setNewCustomerName(customerQuery.trim()); setCustomerQuery(''); setSelectedCustomer(null) }}
                   className="mt-2 text-sm font-semibold" style={{ color: '#f59e0b' }}>
                   + Add new customer
                 </button>
