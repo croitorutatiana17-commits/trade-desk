@@ -232,7 +232,7 @@ export default function NewJobPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Time</label>
-                <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} />
+                <input type="text" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} placeholder="e.g. 9:00 AM" className={inputCls} />
               </div>
             </div>
             <div>
