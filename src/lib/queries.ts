@@ -266,13 +266,14 @@ export function useDashboardStats(userId: string | undefined) {
       const [jobsRes, customersRes, invoicesRes] = await Promise.all([
         supabase.from('jobs').select('*, customers(id, name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50) as any,
         supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(5) as any,
-        supabase.from('invoices').select('status, total').eq('user_id', userId) as any,
+        supabase.from('invoices').select('status, total, paid_at').eq('user_id', userId) as any,
       ])
 
       const jobs: Job[] = jobsRes.data ?? []
-      const todayJobs = jobs.filter((j: Job) =>
-        j.scheduled_date === today || (!j.scheduled_date && j.status !== 'completed' && j.status !== 'cancelled')
-      ).slice(0, 5)
+      const scheduledToday = jobs.filter((j: Job) => j.scheduled_date === today)
+      const todayJobs = scheduledToday.length > 0
+        ? scheduledToday.slice(0, 5)
+        : jobs.filter((j: Job) => j.status !== 'completed' && j.status !== 'cancelled').slice(0, 5)
 
       const invoices = invoicesRes.data ?? []
       const outstandingAmt = invoices
@@ -283,7 +284,7 @@ export function useDashboardStats(userId: string | undefined) {
       const jobsThisMonth = monthJobs.length
 
       const revenueThisMonth = invoices
-        .filter((i: any) => i.status === 'paid')
+        .filter((i: any) => i.status === 'paid' && i.paid_at && i.paid_at >= monthStart)
         .reduce((s: number, i: any) => s + i.total, 0)
 
       return {

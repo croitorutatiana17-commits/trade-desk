@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomers, createJob, createCustomer } from '~/lib/queries'
@@ -17,6 +17,8 @@ const JOB_TYPES = [
 export default function NewJobPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
+  const prefilledCustomerId = searchParams.get('customerId')
   const { data: customers } = useCustomers(user?.id)
 
   const [saving, setSaving] = useState(false)
@@ -39,6 +41,12 @@ export default function NewJobPage() {
   const [scheduledTime, setScheduledTime] = useState('')
   const [status, setStatus] = useState('scheduled')
   const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    if (!prefilledCustomerId || customers.length === 0) return
+    const match = customers.find(c => c.id === prefilledCustomerId)
+    if (match) { setSelectedCustomer(match); setCustomerQuery(match.name) }
+  }, [prefilledCustomerId, customers])
 
   const filteredCustomers = customerQuery.trim()
     ? customers.filter(c =>

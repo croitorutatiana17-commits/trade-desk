@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tradedesk",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/tmp/run-tradedesk.sh"],
+      "port": 3000
+    }
+  ]
+}

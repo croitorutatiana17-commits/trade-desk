@@ -45,7 +45,7 @@ function CustomerCard({ customer, userId }: { customer: CustomerRow; userId: str
 
 export default function CustomersPage() {
   const { user } = useAuth()
-  const { data: customers, loading, error } = useCustomers(user?.id)
+  const { data: customers, loading, error, refetch } = useCustomers(user?.id)
   const [query, setQuery] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [addName, setAddName] = useState('')
@@ -64,6 +64,7 @@ export default function CustomersPage() {
     if (err) { setAddError('Failed to save: ' + err.message); return }
     setShowAdd(false)
     setAddName(''); setAddEmail(''); setAddPhone('')
+    refetch()
   }
 
   const filtered = (customers ?? []).filter(c => {

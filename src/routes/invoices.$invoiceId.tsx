@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
-import { useInvoice, updateInvoiceStatus, type InvoiceStatus } from '~/lib/queries'
+import { useInvoice, useCustomers, updateInvoiceStatus, type InvoiceStatus } from '~/lib/queries'
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -21,6 +21,7 @@ export default function InvoiceDetailPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>()
   const { user } = useAuth()
   const { data: invoice, loading, refetch } = useInvoice(invoiceId, user?.id)
+  const { data: customers } = useCustomers(user?.id)
 
   const [status, setStatus] = useState<InvoiceStatus>('draft')
   const [updating, setUpdating] = useState(false)
@@ -87,7 +88,7 @@ export default function InvoiceDetailPage() {
             </p>
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{invoice.customers?.name ?? 'Customer'}</p>
+            <p className="font-semibold text-gray-900">{invoice.customers?.name ?? customers.find(c => c.id === invoice.customer_id)?.name ?? 'Customer'}</p>
             <p className="text-sm text-gray-500">Issued: {fmt(invoice.issue_date)}</p>
             <p className={`text-sm ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
               Due: {fmt(invoice.due_date)}

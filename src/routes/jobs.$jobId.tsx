@@ -224,7 +224,7 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {status !== 'cancelled' && (
+        {(status === 'in_progress' || status === 'completed') && (
           <Link to={`/invoices/new?jobId=${jobId}`}
             className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-bold text-lg active:scale-[0.98] transition-all"
             style={{ backgroundColor: '#f59e0b', color: '#fff', boxShadow: '0 8px 24px rgba(245,158,11,0.3)' }}>
