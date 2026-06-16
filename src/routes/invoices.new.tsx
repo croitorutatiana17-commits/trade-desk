@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomers, useJob, createInvoice } from '~/lib/queries'
 
@@ -35,12 +35,15 @@ export default function NewInvoicePage() {
   const jobPreFilled = !!jobData
   const billedCustomerId = jobPreFilled ? (jobData.customer_id ?? '') : customerId
 
-  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
-    if (jobData) {
-      return [{ id: makeid(), description: jobData.title, quantity: 1, unitPrice: jobData.price }]
-    }
-    return [{ id: makeid(), description: '', quantity: 1, unitPrice: 0 }]
-  })
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    { id: makeid(), description: '', quantity: 1, unitPrice: 0 },
+  ])
+
+  // Once the job loads, backfill the line item with the job title and price
+  useEffect(() => {
+    if (!jobData) return
+    setLineItems([{ id: makeid(), description: jobData.title, quantity: 1, unitPrice: jobData.price }])
+  }, [jobData])
 
   const addItem = () => setLineItems(p => [...p, { id: makeid(), description: '', quantity: 1, unitPrice: 0 }])
   const removeItem = (id: string) => setLineItems(p => p.filter(i => i.id !== id))
