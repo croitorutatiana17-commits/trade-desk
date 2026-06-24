@@ -15,6 +15,7 @@ import JobDetailPage from '~/routes/jobs.$jobId'
 import InvoicesPage from '~/routes/invoices'
 import NewInvoicePage from '~/routes/invoices.new'
 import InvoiceDetailPage from '~/routes/invoices.$invoiceId'
+import PublicInvoicePage from '~/routes/invoices.public'
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
 interface EBState { hasError: boolean; message: string }
@@ -61,11 +62,13 @@ function MissingEnvBanner() {
 }
 
 const AUTH_ROUTES = ['/login', '/subscribe']
+const PUBLIC_ROUTES = ['/invoice']
 
 function AppShell() {
   const location = useLocation()
   const path = location.pathname
   const isAuthRoute = AUTH_ROUTES.some(r => path === r || path.startsWith(r))
+  const isPublicRoute = PUBLIC_ROUTES.some(r => path === r || path.startsWith(r + '/'))
 
   const { user, loading: authLoading } = useAuth()
   const billing = useBilling()
@@ -73,13 +76,13 @@ function AppShell() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!user && !isAuthRoute) navigate('/login')
-  }, [user, authLoading, isAuthRoute, navigate])
+    if (!user && !isAuthRoute && !isPublicRoute) navigate('/login')
+  }, [user, authLoading, isAuthRoute, isPublicRoute, navigate])
 
   useEffect(() => {
-    if (!user || billing.status === 'loading' || isAuthRoute) return
+    if (!user || billing.status === 'loading' || isAuthRoute || isPublicRoute) return
     if (billing.isBlocked) navigate('/subscribe')
-  }, [user, billing.status, billing.isBlocked, isAuthRoute, navigate])
+  }, [user, billing.status, billing.isBlocked, isAuthRoute, isPublicRoute, navigate])
 
   if (authLoading || (user && billing.status === 'loading')) {
     return (
@@ -91,14 +94,15 @@ function AppShell() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
-      {!isAuthRoute && user && billing.status === 'trialing' && (
+      {!isAuthRoute && !isPublicRoute && user && billing.status === 'trialing' && (
         <TrialBanner daysLeft={billing.trialDaysLeft} endsAt={billing.trialEndsAt} />
       )}
-      <main className={isAuthRoute ? 'flex-1' : 'flex-1 pb-20'}>
+      <main className={isAuthRoute || isPublicRoute ? 'flex-1' : 'flex-1 pb-20'}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
+          <Route path="/invoice/:shareToken" element={<PublicInvoicePage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:customerId" element={<CustomerProfilePage />} />
           <Route path="/jobs" element={<JobsPage />} />
@@ -110,7 +114,7 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      {!isAuthRoute && user && !billing.isBlocked && <Nav path={path} />}
+      {!isAuthRoute && !isPublicRoute && user && !billing.isBlocked && <Nav path={path} />}
     </div>
   )
 }

@@ -47,6 +47,7 @@ export interface LineItem {
 
 export interface Invoice {
   id: string
+  share_token: string
   user_id: string
   customer_id: string | null
   job_id: string | null

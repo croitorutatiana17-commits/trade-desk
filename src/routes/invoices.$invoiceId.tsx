@@ -64,6 +64,11 @@ export default function InvoiceDetailPage() {
   const taxAmt = invoice.tax_amount
   const grandTotal = invoice.total
   const isOverdue = status === 'overdue'
+  const publicUrl = `${window.location.origin}/invoice/${invoice.share_token}`
+
+  const copyPublicUrl = async () => {
+    await navigator.clipboard.writeText(publicUrl)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -176,6 +181,31 @@ export default function InvoiceDetailPage() {
               View Job
             </Link>
           )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+          <div>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Customer invoice link</h2>
+            <p className="text-sm text-gray-500">Share this link with your customer so they can view the invoice.</p>
+          </div>
+          <div className="flex gap-2">
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-xl border-2 border-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 text-center transition-colors truncate px-3"
+            >
+              Open customer view
+            </a>
+            <button
+              type="button"
+              onClick={copyPublicUrl}
+              className="rounded-xl py-3 px-4 text-sm font-semibold text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: '#1B2A4A' }}
+            >
+              Copy
+            </button>
+          </div>
         </div>
 
       </div>
