@@ -83,11 +83,40 @@ function usePublicInvoice(shareToken: string | undefined) {
 export default function PublicInvoicePage() {
   const { shareToken } = useParams<{ shareToken: string }>()
   const { invoice, loading, error } = usePublicInvoice(shareToken)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+
+  const paymentResult = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('payment')
+    : null
 
   const sortedItems = useMemo(
     () => [...(invoice?.line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order),
     [invoice?.line_items],
   )
+
+  const handlePayInvoice = async () => {
+    if (!shareToken) return
+
+    setCheckoutLoading(true)
+    setCheckoutError('')
+
+    try {
+      const { data, error: checkoutErr } = await supabase.functions.invoke(
+        'stripe-invoice-checkout',
+        { body: { shareToken } },
+      )
+
+      if (checkoutErr) throw checkoutErr
+      if (data?.error) throw new Error(data.error)
+      if (!data?.url) throw new Error('Checkout URL was not returned')
+
+      window.location.href = data.url
+    } catch (err) {
+      setCheckoutError((err as Error).message || 'Unable to start checkout')
+      setCheckoutLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -207,15 +236,48 @@ export default function PublicInvoicePage() {
           </section>
         )}
 
-        {!isPaid && (
+        {paymentResult === 'success' && !isPaid && (
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800">
+            Payment submitted. This invoice will update to paid once Stripe confirms the payment.
+          </div>
+        )}
+
+        {paymentResult === 'cancelled' && !isPaid && (
+          <div className="bg-gray-100 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600">
+            Payment was cancelled. You can try again whenever you're ready.
+          </div>
+        )}
+
+        {checkoutError && (
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm text-red-600">
+            {checkoutError}
+          </div>
+        )}
+
+        {!isPaid ? (
           <button
             type="button"
-            disabled
-            className="w-full rounded-2xl py-4 text-white font-bold text-base opacity-60 cursor-not-allowed"
-            style={{ backgroundColor: '#f59e0b' }}
+            onClick={handlePayInvoice}
+            disabled={checkoutLoading}
+            className="w-full rounded-2xl py-4 text-white font-bold text-base disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+            style={{ backgroundColor: '#f59e0b', boxShadow: '0 8px 24px rgba(245,158,11,0.3)' }}
           >
-            Online payment coming next
+            {checkoutLoading ? (
+              <>
+                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Opening secure checkout...
+              </>
+            ) : (
+              <>Pay Invoice - {money(invoice.total)}</>
+            )}
           </button>
+        ) : (
+          <div className="w-full rounded-2xl py-4 bg-green-50 text-green-700 font-bold text-base text-center">
+            Invoice paid
+          </div>
         )}
       </div>
     </div>

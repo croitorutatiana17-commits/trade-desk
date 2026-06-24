@@ -2,6 +2,13 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type JobStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
+export type InvoicePaymentStatus =
+  | 'checkout_created'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'refunded'
+  | 'cancelled'
 
 export interface Database {
   public: {
@@ -76,6 +83,25 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['invoice_line_items']['Row'], 'id'>
         Update: Partial<Database['public']['Tables']['invoice_line_items']['Insert']>
       }
+      invoice_payments: {
+        Row: {
+          id: string
+          invoice_id: string
+          user_id: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_event_id: string | null
+          amount: number
+          currency: string
+          status: InvoicePaymentStatus
+          paid_at: string | null
+          raw_event: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['invoice_payments']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['invoice_payments']['Insert']>
+      }
       job_photos: {
         Row: {
           id: string
@@ -97,6 +123,7 @@ export type CustomerRow = Database['public']['Tables']['customers']['Row']
 export type JobRow = Database['public']['Tables']['jobs']['Row']
 export type InvoiceRow = Database['public']['Tables']['invoices']['Row']
 export type InvoiceLineItemRow = Database['public']['Tables']['invoice_line_items']['Row']
+export type InvoicePaymentRow = Database['public']['Tables']['invoice_payments']['Row']
 export type JobPhotoRow = Database['public']['Tables']['job_photos']['Row']
 
 // Joined types used in the UI
