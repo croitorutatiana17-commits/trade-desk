@@ -41,7 +41,6 @@ export interface LineItem {
   description: string
   quantity: number
   unit_price: number
-  total: number
   sort_order: number
 }
 
@@ -236,7 +235,7 @@ export async function createInvoice(
     subtotal: number; tax_rate: number; tax_amount: number; total: number
     issue_date: string; due_date: string; notes?: string
   },
-  lineItems: { description: string; quantity: number; unit_price: number; total: number; sort_order: number }[]
+  lineItems: { description: string; quantity: number; unit_price: number; sort_order: number }[]
 ) {
   const { data: inv, error } = await (supabase.from('invoices').insert(invoice as any).select().single() as any)
   if (error || !inv) return { data: null, error }

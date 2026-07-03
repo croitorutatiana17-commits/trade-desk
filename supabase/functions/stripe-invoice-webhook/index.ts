@@ -20,6 +20,22 @@ function getRequiredEnv(name: string) {
   return value
 }
 
+function getSupabaseUrl() {
+  const value = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROJECT_URL')
+  if (!value) {
+    throw new Error('SUPABASE_URL or PROJECT_URL is not set in Supabase secrets')
+  }
+  return value
+}
+
+function getServiceRoleKey() {
+  const value = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+  if (!value) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY or SERVICE_ROLE_KEY is not set in Supabase secrets')
+  }
+  return value
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405)
@@ -28,8 +44,8 @@ Deno.serve(async (req) => {
   try {
     const stripeKey = getRequiredEnv('STRIPE_SECRET_KEY')
     const webhookSecret = getRequiredEnv('STRIPE_WEBHOOK_SECRET')
-    const supabaseUrl = getRequiredEnv('SUPABASE_URL')
-    const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    const supabaseUrl = getSupabaseUrl()
+    const serviceRoleKey = getServiceRoleKey()
 
     const signature = req.headers.get('stripe-signature')
     if (!signature) {

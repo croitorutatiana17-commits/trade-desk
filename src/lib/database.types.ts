@@ -77,7 +77,6 @@ export interface Database {
           description: string
           quantity: number
           unit_price: number
-          total: number
           sort_order: number
         }
         Insert: Omit<Database['public']['Tables']['invoice_line_items']['Row'], 'id'>

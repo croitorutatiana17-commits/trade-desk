@@ -37,12 +37,12 @@ Deno.serve(async (req) => {
 
   try {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROJECT_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
 
     if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not set in Supabase secrets')
-    if (!supabaseUrl) throw new Error('SUPABASE_URL is not set in Supabase secrets')
-    if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in Supabase secrets')
+    if (!supabaseUrl) throw new Error('SUPABASE_URL or PROJECT_URL is not set in Supabase secrets')
+    if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY or SERVICE_ROLE_KEY is not set in Supabase secrets')
 
     const { shareToken } = await req.json()
     if (!shareToken || typeof shareToken !== 'string') {

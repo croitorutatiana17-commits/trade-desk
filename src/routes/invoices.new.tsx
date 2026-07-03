@@ -83,7 +83,6 @@ export default function NewInvoicePage() {
           description: li.description,
           quantity: li.quantity,
           unit_price: li.unitPrice,
-          total: li.quantity * li.unitPrice,
           sort_order: i,
         }))
       )

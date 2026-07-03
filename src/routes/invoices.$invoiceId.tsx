@@ -60,7 +60,7 @@ export default function InvoiceDetailPage() {
   }
 
   const lineItems = invoice.invoice_line_items ?? []
-  const subtotal = lineItems.reduce((s, li) => s + li.total, 0) || invoice.subtotal
+  const subtotal = lineItems.reduce((s, li) => s + li.quantity * li.unit_price, 0) || invoice.subtotal
   const taxAmt = invoice.tax_amount
   const grandTotal = invoice.total
   const isOverdue = status === 'overdue'
@@ -130,15 +130,18 @@ export default function InvoiceDetailPage() {
               {lineItems
                 .slice()
                 .sort((a, b) => a.sort_order - b.sort_order)
-                .map(item => (
-                  <div key={item.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{item.description}</p>
-                      <p className="text-xs text-gray-500">{item.quantity} × ${item.unit_price.toFixed(2)}</p>
+                .map(item => {
+                  const lineTotal = item.quantity * item.unit_price
+                  return (
+                    <div key={item.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{item.description}</p>
+                        <p className="text-xs text-gray-500">{item.quantity} × ${item.unit_price.toFixed(2)}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">${lineTotal.toFixed(2)}</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900">${item.total.toFixed(2)}</p>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </div>
         )}
