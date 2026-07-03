@@ -4,6 +4,7 @@
 // Deploy: supabase functions deploy stripe-invoice-webhook --no-verify-jwt
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { receiptEmail, sendEmail } from '../_shared/invoice-email.ts'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
 
@@ -34,6 +35,85 @@ function getServiceRoleKey() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY or SERVICE_ROLE_KEY is not set in Supabase secrets')
   }
   return value
+}
+
+function getAppUrl() {
+  const value = Deno.env.get('APP_URL')
+  if (!value) throw new Error('APP_URL is not set in Supabase secrets')
+  return value.replace(/\/$/, '')
+}
+
+async function sendReceiptEmail(supabase: ReturnType<typeof createClient>, invoiceId: string) {
+  const { data: invoice, error: invoiceErr } = await supabase
+    .from('invoices')
+    .select('id, user_id, invoice_number, share_token, total, due_date, paid_at, receipt_sent_at, customers(name, email)')
+    .eq('id', invoiceId)
+    .single()
+
+  if (invoiceErr || !invoice) {
+    throw new Error(invoiceErr?.message ?? 'Invoice not found for receipt email')
+  }
+
+  if (invoice.receipt_sent_at) {
+    return { skipped: true, reason: 'Receipt already sent' }
+  }
+
+  const customer = Array.isArray(invoice.customers)
+    ? invoice.customers[0]
+    : invoice.customers
+
+  if (!customer?.email) {
+    return { skipped: true, reason: 'Customer email is missing' }
+  }
+
+  const invoiceUrl = `${getAppUrl()}/invoice/${invoice.share_token}`
+  const email = receiptEmail({
+    invoiceNumber: invoice.invoice_number,
+    amount: Number(invoice.total),
+    dueDate: invoice.due_date,
+    paidAt: invoice.paid_at,
+    customer,
+    invoiceUrl,
+  })
+
+  try {
+    const result = await sendEmail({
+      to: customer.email,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    })
+
+    const sentAt = new Date().toISOString()
+
+    await supabase.from('invoice_email_events').insert({
+      invoice_id: invoice.id,
+      user_id: invoice.user_id,
+      customer_email: customer.email,
+      email_type: 'receipt',
+      status: 'sent',
+      resend_email_id: result.id ?? null,
+    })
+
+    await supabase
+      .from('invoices')
+      .update({ receipt_sent_at: sentAt })
+      .eq('id', invoice.id)
+      .is('receipt_sent_at', null)
+
+    return { sent: true, emailId: result.id ?? null }
+  } catch (err) {
+    await supabase.from('invoice_email_events').insert({
+      invoice_id: invoice.id,
+      user_id: invoice.user_id,
+      customer_email: customer.email,
+      email_type: 'receipt',
+      status: 'failed',
+      error_message: (err as Error).message,
+    })
+
+    return { sent: false, error: (err as Error).message }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -123,7 +203,14 @@ Deno.serve(async (req) => {
         return json({ error: invoiceErr.message }, 500)
       }
 
-      return json({ received: true, status: 'paid' })
+      let receipt: Record<string, unknown>
+      try {
+        receipt = await sendReceiptEmail(supabase, invoiceId)
+      } catch (err) {
+        receipt = { sent: false, error: (err as Error).message }
+      }
+
+      return json({ received: true, status: 'paid', receipt })
     }
 
     if (event.type === 'checkout.session.expired') {

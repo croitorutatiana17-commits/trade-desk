@@ -63,6 +63,10 @@ export interface Database {
           issue_date: string
           due_date: string
           paid_at: string | null
+          invoice_sent_at: string | null
+          invoice_last_sent_at: string | null
+          invoice_send_count: number
+          receipt_sent_at: string | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -101,6 +105,21 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['invoice_payments']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['invoice_payments']['Insert']>
       }
+      invoice_email_events: {
+        Row: {
+          id: string
+          invoice_id: string
+          user_id: string
+          customer_email: string
+          email_type: 'invoice' | 'receipt'
+          status: 'sent' | 'failed'
+          resend_email_id: string | null
+          error_message: string | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['invoice_email_events']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['invoice_email_events']['Insert']>
+      }
       job_photos: {
         Row: {
           id: string
@@ -123,6 +142,7 @@ export type JobRow = Database['public']['Tables']['jobs']['Row']
 export type InvoiceRow = Database['public']['Tables']['invoices']['Row']
 export type InvoiceLineItemRow = Database['public']['Tables']['invoice_line_items']['Row']
 export type InvoicePaymentRow = Database['public']['Tables']['invoice_payments']['Row']
+export type InvoiceEmailEventRow = Database['public']['Tables']['invoice_email_events']['Row']
 export type JobPhotoRow = Database['public']['Tables']['job_photos']['Row']
 
 // Joined types used in the UI

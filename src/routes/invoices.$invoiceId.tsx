@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
-import { useInvoice, useCustomers, updateInvoiceStatus, type InvoiceStatus } from '~/lib/queries'
+import { useInvoice, useCustomers, updateInvoiceStatus, sendInvoiceEmail, type InvoiceStatus } from '~/lib/queries'
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -25,6 +25,9 @@ export default function InvoiceDetailPage() {
 
   const [status, setStatus] = useState<InvoiceStatus>('draft')
   const [updating, setUpdating] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailMessage, setEmailMessage] = useState('')
+  const [emailError, setEmailError] = useState('')
 
   useEffect(() => {
     if (invoice) setStatus(invoice.status)
@@ -68,6 +71,26 @@ export default function InvoiceDetailPage() {
 
   const copyPublicUrl = async () => {
     await navigator.clipboard.writeText(publicUrl)
+  }
+
+  const handleSendEmail = async () => {
+    if (!invoice) return
+
+    setEmailSending(true)
+    setEmailMessage('')
+    setEmailError('')
+
+    const { data, error } = await sendInvoiceEmail(invoice.id)
+
+    if (error || !data?.sent) {
+      setEmailError(error?.message ?? 'Invoice email could not be sent')
+      setEmailSending(false)
+      return
+    }
+
+    setEmailMessage(`Sent to ${data.customerEmail}`)
+    setEmailSending(false)
+    refetch()
   }
 
   return (
@@ -183,6 +206,51 @@ export default function InvoiceDetailPage() {
               style={{ backgroundColor: '#1B2A4A' }}>
               View Job
             </Link>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+          <div>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email delivery</h2>
+            <p className="text-sm text-gray-500">
+              Send a branded email with the invoice details and secure payment link.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-gray-900">
+              {invoice.customers?.email ?? 'No customer email on file'}
+            </p>
+            {invoice.invoice_last_sent_at && (
+              <p className="text-xs text-gray-500">
+                Last sent {fmt(invoice.invoice_last_sent_at)}
+                {invoice.invoice_send_count > 1 ? ` (${invoice.invoice_send_count} sends)` : ''}
+              </p>
+            )}
+            {invoice.receipt_sent_at && (
+              <p className="text-xs text-green-600 font-medium">Receipt sent {fmt(invoice.receipt_sent_at)}</p>
+            )}
+          </div>
+          {emailMessage && (
+            <p className="rounded-xl bg-green-50 px-3 py-2 text-sm font-medium text-green-700">{emailMessage}</p>
+          )}
+          {emailError && (
+            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600">{emailError}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleSendEmail}
+            disabled={emailSending || !invoice.customers?.email || status === 'paid'}
+            className="w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: '#1B2A4A' }}
+          >
+            {emailSending
+              ? 'Sending...'
+              : invoice.invoice_last_sent_at
+                ? 'Resend invoice email'
+                : 'Send invoice email'}
+          </button>
+          {status === 'paid' && (
+            <p className="text-xs text-gray-500">Paid invoices no longer need invoice delivery.</p>
           )}
         </div>
 

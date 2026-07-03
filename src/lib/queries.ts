@@ -59,10 +59,14 @@ export interface Invoice {
   issue_date: string
   due_date: string
   paid_at: string | null
+  invoice_sent_at: string | null
+  invoice_last_sent_at: string | null
+  invoice_send_count: number
+  receipt_sent_at: string | null
   notes: string | null
   created_at: string
   // joined
-  customers?: { id: string; name: string } | null
+  customers?: { id: string; name: string; email?: string | null } | null
   invoice_line_items?: LineItem[]
 }
 
@@ -188,7 +192,7 @@ export function useInvoices(userId: string | undefined) {
       if (!userId) return { data: [], error: null }
       return supabase
         .from('invoices')
-        .select('*, customers(id, name), invoice_line_items(*)')
+        .select('*, customers(id, name, email), invoice_line_items(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }) as any
     },
@@ -203,7 +207,7 @@ export function useInvoice(id: string | undefined, userId: string | undefined) {
       if (!id || !userId) return { data: null, error: null }
       return supabase
         .from('invoices')
-        .select('*, customers(id, name), invoice_line_items(*)')
+        .select('*, customers(id, name, email), invoice_line_items(*)')
         .eq('id', id)
         .eq('user_id', userId)
         .single() as any
@@ -252,6 +256,15 @@ export async function updateInvoiceStatus(invoiceId: string, status: InvoiceStat
   const update: Record<string, string> = { status }
   if (status === 'paid') update.paid_at = new Date().toISOString()
   return supabase.from('invoices').update(update as any).eq('id', invoiceId) as any
+}
+
+export async function sendInvoiceEmail(invoiceId: string) {
+  return supabase.functions.invoke('send-invoice-email', {
+    body: { invoiceId },
+  }) as Promise<{
+    data: { sent: boolean; emailId: string | null; customerEmail: string; sentAt: string } | null
+    error: { message?: string } | null
+  }>
 }
 
 // ─── Dashboard stats ──────────────────────────────────────────────────────────
