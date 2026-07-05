@@ -17,6 +17,24 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+async function edgeFunctionErrorMessage(error: unknown) {
+  const fallback = error instanceof Error
+    ? error.message
+    : 'Invoice email could not be sent'
+
+  const context = (error as { context?: Response } | null)?.context
+  if (!context) return fallback
+
+  try {
+    const body = await context.clone().json()
+    if (typeof body?.error === 'string') return body.error
+  } catch {
+    // Fall back to the Supabase wrapper message.
+  }
+
+  return fallback
+}
+
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>()
   const { user } = useAuth()
@@ -83,7 +101,7 @@ export default function InvoiceDetailPage() {
     const { data, error } = await sendInvoiceEmail(invoice.id)
 
     if (error || !data?.sent) {
-      setEmailError(error?.message ?? 'Invoice email could not be sent')
+      setEmailError(await edgeFunctionErrorMessage(error))
       setEmailSending(false)
       return
     }
