@@ -2,6 +2,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomers, useJob, createInvoice } from '~/lib/queries'
+import { dateOnlyToLocalDate, todayDateOnly } from '~/lib/format'
 
 type LineItem = { id: string; description: string; quantity: number; unitPrice: number }
 
@@ -20,8 +21,14 @@ export default function NewInvoicePage() {
   const { data: jobData } = useJob(jobId, user?.id)
   const { data: customers } = useCustomers(user?.id)
 
-  const today = new Date().toISOString().split('T')[0]
-  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+  const today = todayDateOnly()
+  const in30Date = dateOnlyToLocalDate(today)
+  in30Date.setDate(in30Date.getDate() + 30)
+  const in30 = [
+    in30Date.getFullYear(),
+    String(in30Date.getMonth() + 1).padStart(2, '0'),
+    String(in30Date.getDate()).padStart(2, '0'),
+  ].join('-')
 
   const [invoiceNumber] = useState(genInvNum)
   const [customerId, setCustomerId] = useState<string>('')
@@ -74,6 +81,8 @@ export default function NewInvoicePage() {
   const canSubmit = Boolean(
     (jobPreFilled || effectiveCustomerId) &&
     dueDate &&
+    issueDate &&
+    dueDate >= issueDate &&
     Number.isFinite(numericTaxRate) &&
     numericTaxRate >= 0 &&
     total > 0 &&
@@ -89,6 +98,10 @@ export default function NewInvoicePage() {
     try {
       if (total <= 0) {
         setError('Invoice total must be greater than $0.00.')
+        return
+      }
+      if (dueDate < issueDate) {
+        setError('Due date cannot be before the issue date.')
         return
       }
 
@@ -180,7 +193,7 @@ export default function NewInvoicePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Due date</label>
-                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required className={inputCls} />
+                <input type="date" value={dueDate} min={issueDate} onChange={e => setDueDate(e.target.value)} required className={inputCls} />
               </div>
             </div>
           </div>

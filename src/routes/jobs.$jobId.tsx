@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useJob, updateJobStatus, type JobStatus } from '~/lib/queries'
+import { formatDateOnly } from '~/lib/format'
 
 const STATUS_FLOW: JobStatus[] = ['scheduled', 'in_progress', 'completed']
 const STATUS_COLORS: Record<string, string> = {
@@ -186,7 +187,7 @@ export default function JobDetailPage() {
               <div>
                 {job.scheduled_date && (
                   <p className="font-semibold text-gray-900">
-                    {new Date(job.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    {formatDateOnly(job.scheduled_date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
                 )}
                 {job.scheduled_time && <p className="text-sm text-gray-500">{job.scheduled_time}</p>}

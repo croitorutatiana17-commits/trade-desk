@@ -4,6 +4,7 @@ import { useAuth } from '~/lib/auth'
 import { useJobs } from '~/lib/queries'
 import { STATUS_COLORS, STATUS_LABELS } from '~/data'
 import type { JobStatus } from '~/lib/database.types'
+import { formatDateOnly } from '~/lib/format'
 
 const STATUS_TABS: { value: JobStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -86,7 +87,7 @@ export default function JobsPage() {
                     <p className="text-sm text-gray-500 mt-0.5">{(job as any).customers?.name ?? 'No customer'}</p>
                     {job.scheduled_date && (
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(job.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {formatDateOnly(job.scheduled_date, { month: 'short', day: 'numeric' })}
                         {job.scheduled_time ? ' · ' + job.scheduled_time : ''}
                       </p>
                     )}

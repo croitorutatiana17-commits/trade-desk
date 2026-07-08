@@ -2,26 +2,38 @@ import { createClient } from '@supabase/supabase-js'
 
 // In local dev, Vite exposes VITE_SUPABASE_URL via import.meta.env.
 // On Vercel (SSR + SPA), use unprefixed SUPABASE_URL via process.env.
-const supabaseUrl =
+const rawSupabaseUrl =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
   process.env.SUPABASE_URL
 
-const supabaseAnonKey =
+export const supabaseAnonKey =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
   process.env.SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
+export function normalizeSupabaseProjectUrl(value: string | undefined) {
+  if (!value) return undefined
+
+  try {
+    return new URL(value).origin
+  } catch {
+    return value.replace(/\/+$/, '')
+  }
+}
+
+export const supabaseProjectUrl = normalizeSupabaseProjectUrl(rawSupabaseUrl)
+
+if (!supabaseProjectUrl || !supabaseAnonKey) {
   console.error(
     '[TradeDesk] Missing Supabase environment variables.\n' +
-    'Add SUPABASE_URL and SUPABASE_ANON_KEY to your Vercel project settings.',
+    'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY locally, and SUPABASE_URL and SUPABASE_ANON_KEY in Vercel.',
   )
 }
 
 export const supabase = createClient(
-  supabaseUrl ?? 'https://placeholder.supabase.co',
+  supabaseProjectUrl ?? 'https://placeholder.supabase.co',
   supabaseAnonKey ?? 'placeholder-key',
   { auth: { persistSession: true, autoRefreshToken: true } },
 )
 
 export const isSupabaseConfigured =
-  Boolean(supabaseUrl) && supabaseUrl !== 'https://placeholder.supabase.co'
+  Boolean(supabaseProjectUrl) && supabaseProjectUrl !== 'https://placeholder.supabase.co'

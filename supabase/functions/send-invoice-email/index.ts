@@ -16,8 +16,13 @@ function json(body: Record<string, unknown>, status = 200) {
   })
 }
 
+function normalizeProjectUrl(value: string) {
+  return new URL(value).origin
+}
+
 function getSupabaseUrl() {
-  return Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROJECT_URL')
+  const value = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROJECT_URL')
+  return value ? normalizeProjectUrl(value) : undefined
 }
 
 function getServiceRoleKey() {

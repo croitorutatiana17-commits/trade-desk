@@ -4,6 +4,7 @@ import { useAuth } from '~/lib/auth'
 import { useInvoices } from '~/lib/queries'
 import { STATUS_COLORS, STATUS_LABELS } from '~/data'
 import type { InvoiceStatus } from '~/lib/database.types'
+import { formatDateOnly } from '~/lib/format'
 
 const STATUS_TABS: { value: InvoiceStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -12,10 +13,6 @@ const STATUS_TABS: { value: InvoiceStatus | ''; label: string }[] = [
   { value: 'paid', label: 'Paid' },
   { value: 'overdue', label: 'Overdue' },
 ]
-
-function fmt(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 export default function InvoicesPage() {
   const { user } = useAuth()
@@ -136,10 +133,10 @@ export default function InvoicesPage() {
                       </div>
                       <p className="text-sm text-gray-600 mt-0.5 font-medium">{(inv as any).customers?.name ?? 'Unknown customer'}</p>
                       <p className="text-xs text-gray-400 mt-1.5">
-                        {inv.status === 'paid' && inv.paid_at ? <>Paid <span className="font-medium text-green-600">{fmt(inv.paid_at)}</span></>
-                          : isOverdue ? <>Due <span className="font-medium text-red-500">{fmt(inv.due_date)}</span></>
+                        {inv.status === 'paid' && inv.paid_at ? <>Paid <span className="font-medium text-green-600">{formatDateOnly(inv.paid_at)}</span></>
+                          : isOverdue ? <>Due <span className="font-medium text-red-500">{formatDateOnly(inv.due_date)}</span></>
                           : isDraft ? <span>Draft · not sent</span>
-                          : <>Due <span className="font-medium">{fmt(inv.due_date)}</span></>
+                          : <>Due <span className="font-medium">{formatDateOnly(inv.due_date)}</span></>
                         }
                       </p>
                       {lineItems && lineItems.length > 0 && (

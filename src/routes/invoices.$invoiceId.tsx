@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useInvoice, useCustomers, useInvoiceActivity, updateInvoiceStatus, sendInvoiceEmail, type InvoiceStatus } from '~/lib/queries'
+import { formatDateOnly } from '~/lib/format'
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -11,10 +12,6 @@ const STATUS_COLORS: Record<string, string> = {
 }
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft', sent: 'Sent', paid: 'Paid', overdue: 'Overdue',
-}
-
-function fmt(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function fmtDateTime(d: string) {
@@ -63,6 +60,7 @@ export default function InvoiceDetailPage() {
   const [emailSending, setEmailSending] = useState(false)
   const [emailMessage, setEmailMessage] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [statusError, setStatusError] = useState('')
 
   useEffect(() => {
     if (invoice) setStatus(invoice.status)
@@ -71,7 +69,15 @@ export default function InvoiceDetailPage() {
   const handleStatus = async (newStatus: InvoiceStatus) => {
     if (!invoice) return
     setUpdating(true)
-    await updateInvoiceStatus(invoice.id, newStatus)
+    setStatusError('')
+
+    const { error } = await updateInvoiceStatus(invoice.id, newStatus)
+    if (error) {
+      setStatusError((error as { message?: string }).message ?? 'Invoice status could not be updated')
+      setUpdating(false)
+      return
+    }
+
     setStatus(newStatus)
     setUpdating(false)
     refetch()
@@ -252,12 +258,12 @@ export default function InvoiceDetailPage() {
           </div>
           <div>
             <p className="font-semibold text-gray-900">{invoice.customers?.name ?? customers.find(c => c.id === invoice.customer_id)?.name ?? 'Customer'}</p>
-            <p className="text-sm text-gray-500">Issued: {fmt(invoice.issue_date)}</p>
+            <p className="text-sm text-gray-500">Issued: {formatDateOnly(invoice.issue_date)}</p>
             <p className={`text-sm ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
-              Due: {fmt(invoice.due_date)}
+              Due: {formatDateOnly(invoice.due_date)}
             </p>
             {invoice.paid_at && (
-              <p className="text-sm text-green-600 font-medium">Paid: {fmt(invoice.paid_at)}</p>
+              <p className="text-sm text-green-600 font-medium">Paid: {formatDateOnly(invoice.paid_at)}</p>
             )}
           </div>
 
@@ -279,6 +285,9 @@ export default function InvoiceDetailPage() {
               <span className="flex-1 text-center py-3 text-sm font-semibold text-green-700 bg-green-50 rounded-xl">✓ Paid</span>
             )}
           </div>
+          {statusError && (
+            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600">{statusError}</p>
+          )}
         </div>
 
         {lineItems.length > 0 && (
@@ -395,12 +404,12 @@ export default function InvoiceDetailPage() {
             </p>
             {invoice.invoice_last_sent_at && (
               <p className="text-xs text-gray-500">
-                Last sent {fmt(invoice.invoice_last_sent_at)}
+                Last sent {formatDateOnly(invoice.invoice_last_sent_at)}
                 {invoice.invoice_send_count > 1 ? ` (${invoice.invoice_send_count} sends)` : ''}
               </p>
             )}
             {invoice.receipt_sent_at && (
-              <p className="text-xs text-green-600 font-medium">Receipt sent {fmt(invoice.receipt_sent_at)}</p>
+              <p className="text-xs text-green-600 font-medium">Receipt sent {formatDateOnly(invoice.receipt_sent_at)}</p>
             )}
           </div>
           {emailMessage && (

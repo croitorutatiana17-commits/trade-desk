@@ -26,6 +26,10 @@ function getAppUrl(req: Request) {
   throw new Error('APP_URL is not set and request origin is missing')
 }
 
+function normalizeProjectUrl(value: string) {
+  return new URL(value).origin
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -49,7 +53,7 @@ Deno.serve(async (req) => {
       return json({ error: 'shareToken is required' }, 400)
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(normalizeProjectUrl(supabaseUrl), serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
 

@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { useCustomer, useCustomerStats, updateCustomerNotes } from '~/lib/queries'
+import { formatDateOnly } from '~/lib/format'
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: 'bg-blue-50 text-blue-700', in_progress: 'bg-amber-50 text-amber-700',
@@ -176,7 +177,7 @@ export default function CustomerProfilePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{job.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {job.scheduled_date ? new Date(job.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
+                      {job.scheduled_date ? formatDateOnly(job.scheduled_date) : 'No date set'}
                       {job.category ? ' · ' + job.category : ''}
                     </p>
                   </div>
@@ -203,8 +204,8 @@ export default function CustomerProfilePage() {
                     <p className="text-sm font-semibold text-gray-900">{inv.invoice_number}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {inv.status === 'paid' && inv.paid_at
-                        ? `Paid ${new Date(inv.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                        : `Due ${new Date(inv.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                        ? `Paid ${formatDateOnly(inv.paid_at)}`
+                        : `Due ${formatDateOnly(inv.due_date)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

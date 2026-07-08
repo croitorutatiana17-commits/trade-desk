@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '~/lib/supabase'
+import { formatDateOnly } from '~/lib/format'
 
 type PublicLineItem = {
   description: string
@@ -26,14 +27,6 @@ type PublicInvoice = {
   customer_email: string | null
   customer_phone: string | null
   line_items: PublicLineItem[]
-}
-
-function fmt(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
 }
 
 function money(amount: number) {
@@ -188,7 +181,7 @@ export default function PublicInvoicePage() {
                 {money(invoice.total)}
               </p>
               {isPaid && invoice.paid_at && (
-                <p className="text-sm font-semibold text-green-600">Paid {fmt(invoice.paid_at)}</p>
+                <p className="text-sm font-semibold text-green-600">Paid {formatDateOnly(invoice.paid_at)}</p>
               )}
             </div>
           </div>
@@ -202,9 +195,9 @@ export default function PublicInvoicePage() {
             </div>
             <div className="sm:text-right">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Dates</p>
-              <p className="text-sm text-gray-600">Issued {fmt(invoice.issue_date)}</p>
+              <p className="text-sm text-gray-600">Issued {formatDateOnly(invoice.issue_date)}</p>
               <p className={`text-sm mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                Due {fmt(invoice.due_date)}
+                Due {formatDateOnly(invoice.due_date)}
               </p>
             </div>
           </div>

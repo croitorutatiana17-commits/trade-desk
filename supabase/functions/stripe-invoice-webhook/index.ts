@@ -21,12 +21,16 @@ function getRequiredEnv(name: string) {
   return value
 }
 
+function normalizeProjectUrl(value: string) {
+  return new URL(value).origin
+}
+
 function getSupabaseUrl() {
   const value = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('PROJECT_URL')
   if (!value) {
     throw new Error('SUPABASE_URL or PROJECT_URL is not set in Supabase secrets')
   }
-  return value
+  return normalizeProjectUrl(value)
 }
 
 function getServiceRoleKey() {

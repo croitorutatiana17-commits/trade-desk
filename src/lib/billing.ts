@@ -3,7 +3,7 @@
 // Subscription: active only when Stripe verification/webhooks write user_subscriptions.
 
 import { useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { supabase, supabaseAnonKey, supabaseProjectUrl } from './supabase'
 import { useAuth } from './auth'
 import type { UserSubscriptionRow } from './database.types'
 
@@ -112,24 +112,19 @@ export function getAppUrl(): string {
   return explicit || (typeof window !== 'undefined' ? window.location.origin : '')
 }
 
-// Read Supabase creds — support both VITE_ (Vite dev) and unprefixed (Vercel)
-const SUPABASE_URL =
-  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
-  process.env.SUPABASE_URL || ''
-const SUPABASE_ANON_KEY =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
-  process.env.SUPABASE_ANON_KEY || ''
-
 async function getAuthenticatedFunctionHeaders() {
   const { data, error } = await supabase.auth.getSession()
   if (error) throw error
   const accessToken = data.session?.access_token
   if (!accessToken) throw new Error('Please sign in before continuing')
+  if (!supabaseProjectUrl || !supabaseAnonKey) {
+    throw new Error('Supabase is not configured for billing requests')
+  }
 
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${accessToken}`,
-    'apikey': SUPABASE_ANON_KEY,
+    'apikey': supabaseAnonKey,
   }
 }
 
@@ -139,7 +134,7 @@ export async function createStripeCheckoutSession(params: {
   cancelUrl: string
 }): Promise<string> {
   const headers = await getAuthenticatedFunctionHeaders()
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+  const res = await fetch(`${supabaseProjectUrl}/functions/v1/stripe-checkout`, {
     method: 'POST',
     headers,
     body: JSON.stringify(params),
@@ -157,7 +152,7 @@ export async function verifyStripeSession(sessionId: string): Promise<{
   currentPeriodEnd: string | null
 }> {
   const headers = await getAuthenticatedFunctionHeaders()
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-verify`, {
+  const res = await fetch(`${supabaseProjectUrl}/functions/v1/stripe-verify`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ sessionId }),
