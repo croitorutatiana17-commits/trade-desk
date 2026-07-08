@@ -13,13 +13,19 @@ const PERIOD = 'month'
 
 export default function SubscribePage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const session_id = searchParams.get('session_id') ?? undefined
 
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(!!session_id)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true })
+    }
+  }, [authLoading, user, navigate])
 
   useEffect(() => {
     if (!session_id || !user) return
@@ -54,12 +60,14 @@ export default function SubscribePage() {
     }
   }
 
-  if (verifying) {
+  if (authLoading || !user || verifying) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 rounded-full border-4 border-gray-200 border-t-amber-500 animate-spin mx-auto" />
-          <p className="font-semibold text-gray-700">Activating your subscription…</p>
+          <p className="font-semibold text-gray-700">
+            {verifying ? 'Activating your subscription...' : 'Checking your session...'}
+          </p>
           <p className="text-sm text-gray-400">Just a moment</p>
         </div>
       </div>
