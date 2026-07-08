@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '~/lib/supabase'
 
@@ -45,24 +45,20 @@ function usePublicInvoice(shareToken: string | undefined) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    let active = true
-
-    async function load() {
+  const load = useCallback(
+    async (silent = false) => {
       if (!shareToken) {
         setLoading(false)
         setError('Invoice link is missing.')
         return
       }
 
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError('')
 
       const { data, error: err } = await supabase
         .rpc('get_public_invoice', { p_share_token: shareToken })
         .single()
-
-      if (!active) return
 
       if (err) {
         setInvoice(null)
@@ -71,18 +67,22 @@ function usePublicInvoice(shareToken: string | undefined) {
         setInvoice(data as PublicInvoice)
       }
       setLoading(false)
-    }
+    },
+    [shareToken],
+  )
 
-    load()
-    return () => { active = false }
-  }, [shareToken])
+  useEffect(() => {
+    void load()
+  }, [load])
 
-  return { invoice, loading, error }
+  const refetch = useCallback(() => load(true), [load])
+
+  return { invoice, loading, error, refetch }
 }
 
 export default function PublicInvoicePage() {
   const { shareToken } = useParams<{ shareToken: string }>()
-  const { invoice, loading, error } = usePublicInvoice(shareToken)
+  const { invoice, loading, error, refetch } = usePublicInvoice(shareToken)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
 
@@ -94,6 +94,19 @@ export default function PublicInvoicePage() {
     () => [...(invoice?.line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order),
     [invoice?.line_items],
   )
+
+  useEffect(() => {
+    if (paymentResult !== 'success' || invoice?.status === 'paid') return
+
+    let attempts = 0
+    const interval = window.setInterval(() => {
+      attempts += 1
+      void refetch()
+      if (attempts >= 15) window.clearInterval(interval)
+    }, 2000)
+
+    return () => window.clearInterval(interval)
+  }, [invoice?.status, paymentResult, refetch])
 
   const handlePayInvoice = async () => {
     if (!shareToken) return

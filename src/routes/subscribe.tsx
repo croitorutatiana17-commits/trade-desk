@@ -2,7 +2,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth, signOut } from '~/lib/auth'
 import {
-  activateSubscription,
   getAppUrl,
   createStripeCheckoutSession,
   verifyStripeSession,
@@ -27,8 +26,7 @@ export default function SubscribePage() {
 
     setVerifying(true)
     verifyStripeSession(session_id)
-      .then(async result => {
-        await activateSubscription(result.subscriptionId, result.customerId)
+      .then(async () => {
         await new Promise(r => setTimeout(r, 600))
         navigate('/')
       })
@@ -46,8 +44,6 @@ export default function SubscribePage() {
     try {
       const appUrl = getAppUrl()
       const url = await createStripeCheckoutSession({
-        userEmail: user.email ?? '',
-        userId: user.id,
         successUrl: `${appUrl}/subscribe`,
         cancelUrl: `${appUrl}/subscribe`,
       })

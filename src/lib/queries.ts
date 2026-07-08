@@ -70,6 +70,33 @@ export interface Invoice {
   invoice_line_items?: LineItem[]
 }
 
+export interface InvoiceEmailEvent {
+  id: string
+  invoice_id: string
+  user_id: string
+  customer_email: string
+  email_type: 'invoice' | 'receipt'
+  status: 'sent' | 'failed'
+  resend_email_id: string | null
+  error_message: string | null
+  created_at: string
+}
+
+export interface InvoicePaymentEvent {
+  id: string
+  invoice_id: string
+  user_id: string
+  stripe_checkout_session_id: string | null
+  stripe_payment_intent_id: string | null
+  stripe_event_id: string | null
+  amount: number
+  currency: string
+  status: 'checkout_created' | 'processing' | 'paid' | 'failed' | 'refunded' | 'cancelled'
+  paid_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ─── Generic fetch hook ───────────────────────────────────────────────────────
 type State<T> = { data: T; loading: boolean; error: string | null }
 
@@ -232,6 +259,42 @@ export function useCustomerInvoices(customerId: string | undefined, userId: stri
   )
 }
 
+export function useInvoiceActivity(invoiceId: string | undefined, userId: string | undefined) {
+  return useQuery<{ emailEvents: InvoiceEmailEvent[]; paymentEvents: InvoicePaymentEvent[] }>(
+    { emailEvents: [], paymentEvents: [] },
+    async () => {
+      if (!invoiceId || !userId) {
+        return { data: { emailEvents: [], paymentEvents: [] }, error: null }
+      }
+
+      const [emailRes, paymentRes] = await Promise.all([
+        supabase
+          .from('invoice_email_events')
+          .select('*')
+          .eq('invoice_id', invoiceId)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }) as any,
+        supabase
+          .from('invoice_payments')
+          .select('id, invoice_id, user_id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_event_id, amount, currency, status, paid_at, created_at, updated_at')
+          .eq('invoice_id', invoiceId)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }) as any,
+      ])
+
+      const error = emailRes.error ?? paymentRes.error
+      return {
+        data: {
+          emailEvents: emailRes.data ?? [],
+          paymentEvents: paymentRes.data ?? [],
+        },
+        error,
+      }
+    },
+    [invoiceId, userId],
+  )
+}
+
 export async function createInvoice(
   invoice: {
     user_id: string; customer_id?: string; job_id?: string
@@ -241,15 +304,19 @@ export async function createInvoice(
   },
   lineItems: { description: string; quantity: number; unit_price: number; sort_order: number }[]
 ) {
-  const { data: inv, error } = await (supabase.from('invoices').insert(invoice as any).select().single() as any)
-  if (error || !inv) return { data: null, error }
+  const { data, error } = await (supabase.rpc('create_invoice_with_line_items', {
+    p_customer_id: invoice.customer_id ?? null,
+    p_job_id: invoice.job_id ?? null,
+    p_invoice_number: invoice.invoice_number,
+    p_status: invoice.status,
+    p_tax_rate: invoice.tax_rate,
+    p_issue_date: invoice.issue_date,
+    p_due_date: invoice.due_date,
+    p_notes: invoice.notes ?? null,
+    p_line_items: lineItems,
+  }) as any)
 
-  if (lineItems.length > 0) {
-    const items = lineItems.map(li => ({ ...li, invoice_id: (inv as any).id }))
-    const { error: liErr } = await (supabase.from('invoice_line_items').insert(items as any) as any)
-    if (liErr) return { data: null, error: liErr }
-  }
-  return { data: inv as Invoice, error: null }
+  return { data: data as Invoice | null, error }
 }
 
 export async function updateInvoiceStatus(invoiceId: string, status: InvoiceStatus) {

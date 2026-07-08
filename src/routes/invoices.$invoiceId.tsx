@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
-import { useInvoice, useCustomers, updateInvoiceStatus, sendInvoiceEmail, type InvoiceStatus } from '~/lib/queries'
+import { useInvoice, useCustomers, useInvoiceActivity, updateInvoiceStatus, sendInvoiceEmail, type InvoiceStatus } from '~/lib/queries'
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -15,6 +15,22 @@ const STATUS_LABELS: Record<string, string> = {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function fmtDateTime(d: string) {
+  return new Date(d).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function money(amount: number, currency = 'usd') {
+  return amount.toLocaleString('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  })
 }
 
 async function edgeFunctionErrorMessage(error: unknown) {
@@ -40,6 +56,7 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth()
   const { data: invoice, loading, refetch } = useInvoice(invoiceId, user?.id)
   const { data: customers } = useCustomers(user?.id)
+  const { data: activity, refetch: refetchActivity } = useInvoiceActivity(invoiceId, user?.id)
 
   const [status, setStatus] = useState<InvoiceStatus>('draft')
   const [updating, setUpdating] = useState(false)
@@ -86,6 +103,105 @@ export default function InvoiceDetailPage() {
   const grandTotal = invoice.total
   const isOverdue = status === 'overdue'
   const publicUrl = `${window.location.origin}/invoice/${invoice.share_token}`
+  const timeline = (() => {
+    const items: {
+      id: string
+      at: string
+      title: string
+      detail: string
+      tone: 'neutral' | 'success' | 'warning' | 'danger'
+    }[] = [
+      {
+        id: 'created',
+        at: invoice.created_at,
+        title: 'Invoice created',
+        detail: `${invoice.invoice_number} was created as ${STATUS_LABELS[invoice.status].toLowerCase()}.`,
+        tone: 'neutral',
+      },
+    ]
+
+    if (invoice.invoice_sent_at) {
+      items.push({
+        id: 'first-sent',
+        at: invoice.invoice_sent_at,
+        title: 'Invoice first sent',
+        detail: invoice.customers?.email
+          ? `Sent to ${invoice.customers.email}.`
+          : 'Invoice delivery was recorded.',
+        tone: 'success',
+      })
+    }
+
+    activity.emailEvents.forEach(event => {
+      items.push({
+        id: `email-${event.id}`,
+        at: event.created_at,
+        title: event.email_type === 'receipt' ? 'Receipt email' : 'Invoice email',
+        detail: event.status === 'sent'
+          ? `Sent to ${event.customer_email}.`
+          : `Failed to send to ${event.customer_email}${event.error_message ? `: ${event.error_message}` : '.'}`,
+        tone: event.status === 'sent' ? 'success' : 'danger',
+      })
+    })
+
+    activity.paymentEvents.forEach(event => {
+      const labels: Record<string, string> = {
+        checkout_created: 'Payment checkout opened',
+        processing: 'Payment processing',
+        paid: 'Payment confirmed',
+        failed: 'Payment failed',
+        refunded: 'Payment refunded',
+        cancelled: 'Payment cancelled',
+      }
+      const tone = event.status === 'paid'
+        ? 'success'
+        : event.status === 'failed' || event.status === 'cancelled'
+          ? 'danger'
+          : event.status === 'refunded'
+            ? 'warning'
+            : 'neutral'
+
+      items.push({
+        id: `payment-${event.id}`,
+        at: event.paid_at ?? event.created_at,
+        title: labels[event.status] ?? 'Payment update',
+        detail: `${money(Number(event.amount), event.currency)} ${event.currency.toUpperCase()}`,
+        tone,
+      })
+    })
+
+    if (invoice.paid_at) {
+      items.push({
+        id: 'paid',
+        at: invoice.paid_at,
+        title: 'Invoice marked paid',
+        detail: `${money(grandTotal)} payment recorded.`,
+        tone: 'success',
+      })
+    }
+
+    if (invoice.receipt_sent_at) {
+      items.push({
+        id: 'receipt-sent',
+        at: invoice.receipt_sent_at,
+        title: 'Receipt sent',
+        detail: invoice.customers?.email
+          ? `Receipt sent to ${invoice.customers.email}.`
+          : 'Receipt delivery was recorded.',
+        tone: 'success',
+      })
+    }
+
+    return items
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .filter((item, index, all) =>
+        all.findIndex(other =>
+          other.title === item.title &&
+          other.at === item.at &&
+          other.detail === item.detail
+        ) === index
+      )
+  })()
 
   const copyPublicUrl = async () => {
     await navigator.clipboard.writeText(publicUrl)
@@ -109,6 +225,7 @@ export default function InvoiceDetailPage() {
     setEmailMessage(`Sent to ${data.customerEmail}`)
     setEmailSending(false)
     refetch()
+    refetchActivity()
   }
 
   return (
@@ -225,6 +342,44 @@ export default function InvoiceDetailPage() {
               View Job
             </Link>
           )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Invoice activity</h2>
+            <p className="text-sm text-gray-500">Email delivery and Stripe payment history for this invoice.</p>
+          </div>
+          <div className="space-y-4">
+            {timeline.map(item => (
+              <div key={item.id} className="flex gap-3">
+                <div
+                  className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    item.tone === 'success' ? 'bg-green-50 text-green-700'
+                      : item.tone === 'danger' ? 'bg-red-50 text-red-600'
+                      : item.tone === 'warning' ? 'bg-amber-50 text-amber-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.4} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={
+                      item.tone === 'success'
+                        ? 'M4.5 12.75l6 6 9-13.5'
+                        : item.tone === 'danger'
+                          ? 'M6 18L18 6M6 6l12 12'
+                          : 'M12 6v6l4 2'
+                    } />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                    <p className="text-xs text-gray-400 shrink-0">{fmtDateTime(item.at)}</p>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5 break-words">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">

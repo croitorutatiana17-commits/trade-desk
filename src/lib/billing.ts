@@ -1,10 +1,11 @@
-// Billing state: trial + subscription management via Supabase user metadata
-// Trial: 14 days from account creation stored in user_metadata.trial_start
-// Subscription: active once Stripe checkout completes, stored in user_metadata.subscription
+// Billing state: trial + subscription management via server-owned records.
+// Trial: 14 days from account creation.
+// Subscription: active only when Stripe verification/webhooks write user_subscriptions.
 
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from './auth'
+import type { UserSubscriptionRow } from './database.types'
 
 export type BillingStatus =
   | 'loading'          // Determining state
@@ -40,60 +41,67 @@ export function useBilling(): BillingState {
       return
     }
 
-    const meta = user.user_metadata ?? {}
+    const currentUser = user
+    let cancelled = false
 
-    // Subscription takes priority
-    if (meta.subscription_status === 'active' || meta.subscription_status === 'trialing') {
-      setState({
-        status: 'active',
-        trialDaysLeft: 0,
-        trialEndsAt: null,
-        isBlocked: false,
-        subscriptionId: meta.subscription_id ?? null,
-      })
-      return
+    async function loadBilling() {
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (!error && data && isSubscriptionActive(data as UserSubscriptionRow)) {
+        setState({
+          status: 'active',
+          trialDaysLeft: 0,
+          trialEndsAt: null,
+          isBlocked: false,
+          subscriptionId: (data as UserSubscriptionRow).stripe_subscription_id,
+        })
+        return
+      }
+
+      const createdAt = new Date(currentUser.created_at)
+      const trialEndsAt = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+      const now = new Date()
+      const msLeft = trialEndsAt.getTime() - now.getTime()
+      const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
+
+      if (msLeft > 0) {
+        setState({
+          status: 'trialing',
+          trialDaysLeft: daysLeft,
+          trialEndsAt,
+          isBlocked: false,
+          subscriptionId: null,
+        })
+      } else {
+        setState({
+          status: 'trial_expired',
+          trialDaysLeft: 0,
+          trialEndsAt,
+          isBlocked: true,
+          subscriptionId: null,
+        })
+      }
     }
 
-    // Compute trial window from account creation time
-    const createdAt = new Date(user.created_at)
-    const trialEndsAt = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
-    const now = new Date()
-    const msLeft = trialEndsAt.getTime() - now.getTime()
-    const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
-
-    if (msLeft > 0) {
-      setState({
-        status: 'trialing',
-        trialDaysLeft: daysLeft,
-        trialEndsAt,
-        isBlocked: false,
-        subscriptionId: null,
-      })
-    } else {
-      setState({
-        status: 'trial_expired',
-        trialDaysLeft: 0,
-        trialEndsAt,
-        isBlocked: true,
-        subscriptionId: null,
-      })
-    }
+    void loadBilling()
+    return () => { cancelled = true }
   }, [user, authLoading])
 
   return state
 }
 
-// Called after successful Stripe checkout to update user metadata
-export async function activateSubscription(subscriptionId: string, customerId: string) {
-  const { error } = await supabase.auth.updateUser({
-    data: {
-      subscription_status: 'active',
-      subscription_id: subscriptionId,
-      stripe_customer_id: customerId,
-      subscribed_at: new Date().toISOString(),
-    },
-  })
-  if (error) throw error
+function isSubscriptionActive(subscription: UserSubscriptionRow) {
+  if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+    return false
+  }
+  if (!subscription.current_period_end) return true
+  return new Date(subscription.current_period_end).getTime() > Date.now()
 }
 
 // Get the app URL for Stripe redirects — prefers explicit env var, falls back to current origin
@@ -112,19 +120,28 @@ const SUPABASE_ANON_KEY =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
   process.env.SUPABASE_ANON_KEY || ''
 
+async function getAuthenticatedFunctionHeaders() {
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error
+  const accessToken = data.session?.access_token
+  if (!accessToken) throw new Error('Please sign in before continuing')
+
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': SUPABASE_ANON_KEY,
+  }
+}
+
 // Call the stripe-checkout Supabase Edge Function
 export async function createStripeCheckoutSession(params: {
-  userEmail: string
-  userId: string
   successUrl: string
   cancelUrl: string
 }): Promise<string> {
+  const headers = await getAuthenticatedFunctionHeaders()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    },
+    headers,
     body: JSON.stringify(params),
   })
   const data = await res.json()
@@ -137,14 +154,12 @@ export async function verifyStripeSession(sessionId: string): Promise<{
   status: string
   customerId: string
   subscriptionId: string
-  currentPeriodEnd: number
+  currentPeriodEnd: string | null
 }> {
+  const headers = await getAuthenticatedFunctionHeaders()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-verify`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    },
+    headers,
     body: JSON.stringify({ sessionId }),
   })
   const data = await res.json()

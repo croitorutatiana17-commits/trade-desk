@@ -9,6 +9,15 @@ export type InvoicePaymentStatus =
   | 'failed'
   | 'refunded'
   | 'cancelled'
+export type SubscriptionStatus =
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'unpaid'
+  | 'paused'
 
 export interface Database {
   public: {
@@ -120,6 +129,19 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['invoice_email_events']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['invoice_email_events']['Insert']>
       }
+      user_subscriptions: {
+        Row: {
+          user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          status: SubscriptionStatus
+          current_period_end: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['user_subscriptions']['Row'], 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['user_subscriptions']['Insert']>
+      }
       job_photos: {
         Row: {
           id: string
@@ -143,6 +165,7 @@ export type InvoiceRow = Database['public']['Tables']['invoices']['Row']
 export type InvoiceLineItemRow = Database['public']['Tables']['invoice_line_items']['Row']
 export type InvoicePaymentRow = Database['public']['Tables']['invoice_payments']['Row']
 export type InvoiceEmailEventRow = Database['public']['Tables']['invoice_email_events']['Row']
+export type UserSubscriptionRow = Database['public']['Tables']['user_subscriptions']['Row']
 export type JobPhotoRow = Database['public']['Tables']['job_photos']['Row']
 
 // Joined types used in the UI

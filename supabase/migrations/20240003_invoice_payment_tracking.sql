@@ -35,6 +35,15 @@ create index if not exists invoice_payments_user_id_idx
 create index if not exists invoice_payments_status_idx
   on public.invoice_payments (status);
 
+alter table public.invoice_payments enable row level security;
+
+drop policy if exists "Users can view their invoice payments" on public.invoice_payments;
+
+create policy "Users can view their invoice payments"
+on public.invoice_payments
+for select
+using (auth.uid() = user_id);
+
 create or replace function public.set_invoice_payments_updated_at()
 returns trigger
 language plpgsql

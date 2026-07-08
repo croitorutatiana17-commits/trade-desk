@@ -15,6 +15,7 @@ export default function NewInvoicePage() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const jobId = searchParams.get('jobId') ?? undefined
+  const prefilledCustomerId = searchParams.get('customerId') ?? undefined
 
   const { data: jobData } = useJob(jobId, user?.id)
   const { data: customers } = useCustomers(user?.id)
@@ -28,8 +29,8 @@ export default function NewInvoicePage() {
   const [dueDate, setDueDate] = useState(in30)
   const [taxRate, setTaxRate] = useState('0')
   const [notes, setNotes] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [created, setCreated] = useState(false)
   const [error, setError] = useState('')
 
   const jobPreFilled = !!jobData
@@ -45,6 +46,13 @@ export default function NewInvoicePage() {
     setLineItems([{ id: makeid(), description: jobData.title, quantity: 1, unitPrice: jobData.price }])
   }, [jobData])
 
+  useEffect(() => {
+    if (jobPreFilled || !prefilledCustomerId) return
+    if (customers.some(c => c.id === prefilledCustomerId)) {
+      setCustomerId(prefilledCustomerId)
+    }
+  }, [customers, jobPreFilled, prefilledCustomerId])
+
   const addItem = () => setLineItems(p => [...p, { id: makeid(), description: '', quantity: 1, unitPrice: 0 }])
   const removeItem = (id: string) => setLineItems(p => p.filter(i => i.id !== id))
   const updateItem = (id: string, field: keyof LineItem, val: string | number) =>
@@ -55,24 +63,44 @@ export default function NewInvoicePage() {
   const total = subtotal + taxAmt
 
   const effectiveCustomerId = billedCustomerId || customerId
-  const canSubmit = (jobPreFilled || effectiveCustomerId) && dueDate && lineItems.every(i => i.description.trim())
+  const numericTaxRate = parseFloat(taxRate || '0')
+  const lineItemsValid = lineItems.every(i =>
+    i.description.trim() &&
+    Number.isFinite(i.quantity) &&
+    i.quantity > 0 &&
+    Number.isFinite(i.unitPrice) &&
+    i.unitPrice >= 0
+  )
+  const canSubmit = Boolean(
+    (jobPreFilled || effectiveCustomerId) &&
+    dueDate &&
+    Number.isFinite(numericTaxRate) &&
+    numericTaxRate >= 0 &&
+    total > 0 &&
+    lineItemsValid
+  )
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !canSubmit) return
-    setSending(true)
+    setCreating(true)
     setError('')
 
     try {
-      const { error: err } = await createInvoice(
+      if (total <= 0) {
+        setError('Invoice total must be greater than $0.00.')
+        return
+      }
+
+      const { data, error: err } = await createInvoice(
         {
           user_id: user.id,
           customer_id: effectiveCustomerId || undefined,
           job_id: jobId || undefined,
           invoice_number: invoiceNumber,
-          status: 'sent',
+          status: 'draft',
           subtotal,
-          tax_rate: parseFloat(taxRate || '0'),
+          tax_rate: numericTaxRate,
           tax_amount: taxAmt,
           total,
           issue_date: issueDate,
@@ -87,12 +115,15 @@ export default function NewInvoicePage() {
         }))
       )
 
-      if (err) { setError('Failed to send: ' + (err as any).message); return }
+      if (err || !data) {
+        setError('Failed to create invoice: ' + ((err as any)?.message ?? 'Unknown error'))
+        return
+      }
 
-      setSent(true)
-      setTimeout(() => navigate('/invoices'), 800)
+      setCreated(true)
+      setTimeout(() => navigate(`/invoices/${data.id}`), 800)
     } finally {
-      setSending(false)
+      setCreating(false)
     }
   }
 
@@ -117,7 +148,7 @@ export default function NewInvoicePage() {
           </div>
         </div>
 
-        <form onSubmit={handleSend} className="space-y-3">
+        <form onSubmit={handleCreate} className="space-y-3">
 
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Details</h2>
@@ -267,20 +298,20 @@ export default function NewInvoicePage() {
             </Link>
             <button
               type="submit"
-              disabled={!canSubmit || sending || sent}
+              disabled={!canSubmit || creating || created}
               className="flex-1 rounded-xl py-4 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
               style={{
-                backgroundColor: sent ? '#16a34a' : '#f59e0b',
+                backgroundColor: created ? '#16a34a' : '#f59e0b',
                 color: '#fff',
-                boxShadow: sent ? '0 8px 24px rgba(22,163,74,0.3)' : '0 8px 24px rgba(245,158,11,0.3)',
+                boxShadow: created ? '0 8px 24px rgba(22,163,74,0.3)' : '0 8px 24px rgba(245,158,11,0.3)',
               }}
             >
-              {sent ? (
-                <><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg> Invoice Sent!</>
-              ) : sending ? (
-                <><svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Sending…</>
+              {created ? (
+                <><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg> Invoice Created!</>
+              ) : creating ? (
+                <><svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Creating…</>
               ) : (
-                <><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.269 20.876L5.999 12zm0 0h7.5" /></svg> Send Invoice — ${total.toFixed(2)}</>
+                <><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 12h9.75M10.5 18h9.75M3.75 6h.008v.008H3.75V6zm0 6h.008v.008H3.75V12zm0 6h.008v.008H3.75V18z" /></svg> Create Invoice — ${total.toFixed(2)}</>
               )}
             </button>
           </div>
