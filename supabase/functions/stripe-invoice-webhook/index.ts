@@ -47,6 +47,51 @@ function getAppUrl() {
   return value.replace(/\/$/, '')
 }
 
+function subscriptionPeriodEnd(subscription: Stripe.Subscription) {
+  const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
+  return periodEnd ? new Date(periodEnd * 1000).toISOString() : null
+}
+
+function subscriptionCustomerId(subscription: Stripe.Subscription, fallback: unknown) {
+  if (typeof subscription.customer === 'string') return subscription.customer
+  if (subscription.customer?.id) return subscription.customer.id
+  return typeof fallback === 'string' ? fallback : null
+}
+
+async function upsertUserSubscription(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  subscription: Stripe.Subscription,
+  fallbackCustomer: unknown,
+) {
+  const { error } = await supabase.from('user_subscriptions').upsert({
+    user_id: userId,
+    stripe_customer_id: subscriptionCustomerId(subscription, fallbackCustomer),
+    stripe_subscription_id: subscription.id,
+    status: subscription.status,
+    current_period_end: subscriptionPeriodEnd(subscription),
+  }, { onConflict: 'user_id' })
+
+  if (error) throw new Error(error.message)
+}
+
+async function userIdForSubscription(
+  supabase: ReturnType<typeof createClient>,
+  subscription: Stripe.Subscription,
+) {
+  const metadataUserId = subscription.metadata?.supabaseUserId
+  if (metadataUserId) return metadataUserId
+
+  const { data, error } = await supabase
+    .from('user_subscriptions')
+    .select('user_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return data?.user_id as string | undefined
+}
+
 async function sendReceiptEmail(supabase: ReturnType<typeof createClient>, invoiceId: string) {
   const { data: invoice, error: invoiceErr } = await supabase
     .from('invoices')
@@ -150,11 +195,34 @@ Deno.serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
+
+      if (session.mode === 'subscription') {
+        const userId = session.metadata?.supabaseUserId
+        if (!userId) {
+          return json({ received: true, ignored: 'subscription checkout missing user metadata' })
+        }
+
+        const subscription = typeof session.subscription === 'string'
+          ? await stripe.subscriptions.retrieve(session.subscription)
+          : session.subscription as Stripe.Subscription | null
+
+        if (!subscription?.id) {
+          return json({ error: 'Subscription missing from checkout session' }, 400)
+        }
+
+        await upsertUserSubscription(supabase, userId, subscription, session.customer)
+        return json({ received: true, status: 'subscription_updated' })
+      }
+
+      if (session.mode !== 'payment') {
+        return json({ received: true, ignored: session.mode ?? 'unknown checkout mode' })
+      }
+
       const invoiceId = session.metadata?.invoiceId
       const userId = session.metadata?.userId
 
       if (!invoiceId || !userId) {
-        return json({ error: 'Missing invoice metadata' }, 400)
+        return json({ received: true, ignored: 'payment checkout missing invoice metadata' })
       }
 
       if (session.payment_status !== 'paid') {
@@ -215,6 +283,18 @@ Deno.serve(async (req) => {
       }
 
       return json({ received: true, status: 'paid', receipt })
+    }
+
+    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription
+      const userId = await userIdForSubscription(supabase, subscription)
+
+      if (!userId) {
+        return json({ received: true, ignored: 'subscription missing user metadata' })
+      }
+
+      await upsertUserSubscription(supabase, userId, subscription, subscription.customer)
+      return json({ received: true, status: 'subscription_updated' })
     }
 
     if (event.type === 'checkout.session.expired') {
