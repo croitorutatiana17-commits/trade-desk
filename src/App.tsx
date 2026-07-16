@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from '~/lib/supabase'
 
 import Dashboard from '~/routes/index'
 import LoginPage from '~/routes/login'
+import ResetPasswordPage from '~/routes/reset-password'
 import SubscribePage from '~/routes/subscribe'
 import CustomersPage from '~/routes/customers'
 import CustomerProfilePage from '~/routes/customers.$customerId'
@@ -61,7 +62,7 @@ function MissingEnvBanner() {
   )
 }
 
-const AUTH_ROUTES = ['/login', '/subscribe']
+const AUTH_ROUTES = ['/login', '/reset-password', '/subscribe']
 const PUBLIC_ROUTES = ['/invoice']
 
 function AppShell() {
@@ -101,6 +102,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
           <Route path="/invoice/:shareToken" element={<PublicInvoicePage />} />
           <Route path="/customers" element={<CustomersPage />} />

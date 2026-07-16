@@ -1,11 +1,18 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, useAuth } from '~/lib/auth'
+import {
+  sendPasswordResetEmail,
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+  useAuth,
+} from '~/lib/auth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, loading } = useAuth()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,6 +26,12 @@ export default function LoginPage() {
     }
   }, [user, loading, navigate])
 
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('mode') === 'forgot') {
+      setMode('forgot')
+    }
+  }, [location.search])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -26,7 +39,15 @@ export default function LoginPage() {
     setSubmitting(true)
 
     try {
-      if (mode === 'login') {
+      if (mode === 'forgot') {
+        const redirectTo =
+          typeof window !== 'undefined'
+            ? `${window.location.origin}/reset-password`
+            : '/reset-password'
+        const { error } = await sendPasswordResetEmail(email, redirectTo)
+        if (error) { setError(error.message); return }
+        setInfo('Check your email for a secure password reset link.')
+      } else if (mode === 'login') {
         const { error } = await signInWithEmail(email, password)
         if (error) { setError(error.message); return }
         navigate('/')
@@ -69,7 +90,11 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold" style={{ color: '#1B2A4A' }}>TradeDesk</h1>
           <p className="text-sm text-gray-400">
-            {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
+            {mode === 'forgot'
+              ? 'Reset your password'
+              : mode === 'login'
+              ? 'Sign in to your account'
+              : 'Create your account'}
           </p>
         </div>
 
@@ -111,19 +136,33 @@ export default function LoginPage() {
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:border-amber-400 focus:outline-none transition-colors"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                placeholder="••••••••"
-                minLength={6}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:border-amber-400 focus:outline-none transition-colors"
-              />
-            </div>
+            {mode !== 'forgot' && (
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot'); setError(''); setInfo('') }}
+                      className="text-xs font-semibold hover:underline"
+                      style={{ color: '#1B2A4A' }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  placeholder="••••••••"
+                  minLength={6}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:border-amber-400 focus:outline-none transition-colors"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 border border-red-100">
@@ -143,15 +182,19 @@ export default function LoginPage() {
               style={{ backgroundColor: '#1B2A4A' }}
             >
               {submitting ? (
-                <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> {mode === 'login' ? 'Signing in…' : 'Creating account…'}</>
-              ) : mode === 'login' ? 'Sign in' : 'Create account'}
+                <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> {mode === 'forgot' ? 'Sending link…' : mode === 'login' ? 'Signing in…' : 'Creating account…'}</>
+              ) : mode === 'forgot' ? 'Send reset link' : mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </form>
         </div>
 
         {/* Toggle mode */}
         <p className="text-center text-sm text-gray-500">
-          {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+          {mode === 'forgot'
+            ? 'Remember your password? '
+            : mode === 'login'
+            ? "Don't have an account? "
+            : 'Already have an account? '}
           <button
             onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo('') }}
             className="font-semibold hover:underline"

@@ -39,6 +39,12 @@ export const signInWithEmail = (email: string, password: string) =>
 export const signUpWithEmail = (email: string, password: string) =>
   supabase.auth.signUp({ email, password })
 
+export const sendPasswordResetEmail = (email: string, redirectTo: string) =>
+  supabase.auth.resetPasswordForEmail(email, { redirectTo })
+
+export const updatePassword = (password: string) =>
+  supabase.auth.updateUser({ password })
+
 export const signInWithGoogle = () =>
   supabase.auth.signInWithOAuth({
     provider: 'google',
