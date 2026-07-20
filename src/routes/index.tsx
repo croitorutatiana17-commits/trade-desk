@@ -50,6 +50,9 @@ export default function Dashboard() {
             <p className="text-sm text-gray-400">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
+            <Link to="/support" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
+              Support
+            </Link>
           </div>
           <button
             onClick={async () => { await signOut(); navigate('/login') }}

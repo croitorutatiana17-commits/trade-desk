@@ -36,6 +36,11 @@ TradeDesk helps contractors manage customers, jobs, invoices, email delivery, an
 - `APP_URL`
 
 `APP_URL` should be the deployed app URL, for example `https://trade-desk-seven.vercel.app`.
+For production, use:
+
+```text
+https://tradedeshq.com
+```
 
 ## Required Supabase Edge Function Secrets
 
@@ -47,8 +52,42 @@ TradeDesk helps contractors manage customers, jobs, invoices, email delivery, an
 - `STRIPE_WEBHOOK_SECRET`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
+- `EMAIL_REPLY_TO`
 
 `EMAIL_FROM` must use a verified Resend domain, for example `TradeDesk <invoices@tradedeshq.com>`.
+`EMAIL_REPLY_TO` should point to the support mailbox, for example `support@tradedeshq.com`.
+
+## Professional Email Setup
+
+TradeDesk uses two domain email addresses:
+
+- `support@tradedeshq.com` for customer support, replies, billing questions, and app help.
+- `invoices@tradedeshq.com` for invoice and receipt delivery through Resend.
+
+Adding these addresses to app copy or Supabase secrets does not create actual mailboxes. Configure them with one of these options:
+
+- Google Workspace: create `support@tradedeshq.com` as a user, group, alias, or routing address. Use Google Workspace MX records in DNS if Google handles inbound mail.
+- Namecheap Private Email: create `support@tradedeshq.com` in Namecheap Private Email. Use Namecheap Private Email MX records in DNS if Namecheap handles inbound mail.
+- Email forwarding: create a forwarder from `support@tradedeshq.com` to the mailbox you monitor. Confirm replies can be sent from the support address before inviting beta users.
+
+For Resend invoice delivery:
+
+1. Keep the `tradedeshq.com` domain verified in Resend.
+2. Set Supabase Edge Function secret `EMAIL_FROM` to:
+
+   ```text
+   TradeDesk <invoices@tradedeshq.com>
+   ```
+
+3. Set Supabase Edge Function secret `EMAIL_REPLY_TO` to:
+
+   ```text
+   support@tradedeshq.com
+   ```
+
+4. Keep the existing `RESEND_API_KEY` secret active.
+
+Do not change `EMAIL_FROM` to `support@tradedeshq.com` unless that address is also verified and intended for transactional invoice delivery.
 
 ## Deploy Supabase Changes
 
