@@ -8,6 +8,7 @@ import Dashboard from '~/routes/index'
 import LoginPage from '~/routes/login'
 import ResetPasswordPage from '~/routes/reset-password'
 import SubscribePage from '~/routes/subscribe'
+import { PrivacyPolicyPage, TermsPage, SupportPage } from '~/routes/legal'
 import CustomersPage from '~/routes/customers'
 import CustomerProfilePage from '~/routes/customers.$customerId'
 import JobsPage from '~/routes/jobs'
@@ -63,7 +64,7 @@ function MissingEnvBanner() {
 }
 
 const AUTH_ROUTES = ['/login', '/reset-password', '/subscribe']
-const PUBLIC_ROUTES = ['/invoice']
+const PUBLIC_ROUTES = ['/invoice', '/privacy', '/terms', '/support']
 
 function AppShell() {
   const location = useLocation()
@@ -104,6 +105,9 @@ function AppShell() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/invoice/:shareToken" element={<PublicInvoicePage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:customerId" element={<CustomerProfilePage />} />

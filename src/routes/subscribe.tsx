@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth, signOut } from '~/lib/auth'
 import {
@@ -141,8 +141,33 @@ export default function SubscribePage() {
                 </>
               )}
             </button>
-            <p className="text-center text-xs text-gray-400">Secure payment via Stripe. Cancel anytime.</p>
+            <p className="text-center text-xs text-gray-400">
+              Secure payment via Stripe. Cancel anytime.
+            </p>
+            <p className="text-center text-xs text-gray-400 leading-5">
+              By subscribing, you agree to the{' '}
+              <Link to="/terms" className="font-semibold hover:text-gray-600">
+                Terms
+              </Link>{' '}
+              and acknowledge the{' '}
+              <Link to="/privacy" className="font-semibold hover:text-gray-600">
+                Privacy Policy
+              </Link>
+              .
+            </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-400">
+          <Link to="/privacy" className="font-semibold hover:text-gray-600">
+            Privacy
+          </Link>
+          <Link to="/terms" className="font-semibold hover:text-gray-600">
+            Terms
+          </Link>
+          <Link to="/support" className="font-semibold hover:text-gray-600">
+            Support
+          </Link>
         </div>
 
         <button

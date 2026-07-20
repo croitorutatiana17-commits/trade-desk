@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import {
   sendPasswordResetEmail,
@@ -203,6 +203,18 @@ export default function LoginPage() {
             {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-400">
+          <Link to="/privacy" className="font-semibold hover:text-gray-600">
+            Privacy
+          </Link>
+          <Link to="/terms" className="font-semibold hover:text-gray-600">
+            Terms
+          </Link>
+          <Link to="/support" className="font-semibold hover:text-gray-600">
+            Support
+          </Link>
+        </div>
 
       </div>
     </div>
