@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 const NAVY = '#1B2A4A'
-const EFFECTIVE_DATE = '[Insert Effective Date]'
+const EFFECTIVE_DATE = 'July 20, 2026'
 
 type Section = {
   title: string
