@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 const benefits = [
   {
     title: 'Keep customer details organized',
-    body: 'Save customer contact information and job history so every invoice starts with the right details.',
+    body: 'Save homeowner contact information and service history so every job and invoice starts with the right details.',
   },
   {
     title: 'Track jobs from request to payment',
-    body: 'Create jobs, schedule work, record prices, and keep today\'s priorities close at hand.',
+    body: 'Create service jobs, schedule work, record prices, and keep today\'s priorities close at hand.',
   },
   {
     title: 'Send professional invoices',
@@ -29,7 +29,7 @@ const steps = [
 const faqs = [
   {
     q: 'Who is TradeDesk built for?',
-    a: 'TradeDesk is built for solo electricians and small electrical contractors who need a simple way to manage customers, jobs, invoices, and payments.',
+    a: 'TradeDesk is built for solo and small home-service contractors, including electricians, plumbers, HVAC technicians, handymen, and similar field-service professionals.',
   },
   {
     q: 'Can customers pay invoices online?',
@@ -69,15 +69,15 @@ function ProductPreview() {
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase text-gray-400">Customer</p>
-              <h3 className="mt-1 text-lg font-bold text-gray-950">Northside Panel Upgrade</h3>
-              <p className="mt-1 text-sm text-gray-500">Residential service call and materials</p>
+              <h3 className="mt-1 text-lg font-bold text-gray-950">Northside Service Call</h3>
+              <p className="mt-1 text-sm text-gray-500">Home-service labor and materials</p>
             </div>
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Due soon</span>
           </div>
           <div className="space-y-3">
             {[
-              ['Panel replacement labor', '$850.00'],
-              ['Breaker kit and materials', '$245.00'],
+              ['Service labor', '$850.00'],
+              ['Parts and materials', '$245.00'],
               ['Permit handling', '$75.00'],
             ].map(([label, amount]) => (
               <div key={label} className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3">
@@ -141,12 +141,12 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(23,37,61,0.98),rgba(31,50,76,0.92),rgba(55,78,99,0.8))]" />
           <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
             <div className="max-w-3xl">
-              <p className="text-sm font-black uppercase text-amber-300">Built for electrical contractors</p>
+              <p className="text-sm font-black uppercase text-amber-300">Built for home-service contractors</p>
               <h1 className="mt-4 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-                TradeDesk helps electricians run jobs, send invoices, and get paid.
+                Run your service business without complicated software.
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-blue-50">
-                A focused workspace for solo electricians and small electrical contractors to manage customers, track jobs, email invoices, accept card payments, and see what has been paid.
+                Manage customers and jobs, send professional invoices, accept card payments, and track what has been paid. Built for independent electricians, plumbers, HVAC technicians, handymen, and similar field-service pros.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link to="/login?mode=signup" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber-500 px-6 text-base font-black text-white shadow-lg hover:bg-amber-400">
@@ -166,8 +166,8 @@ export default function LandingPage() {
         <section id="benefits" className="bg-gray-50 px-4 py-20 sm:px-6">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <p className="text-sm font-black uppercase text-amber-600">Everything needed for the invoice workflow</p>
-              <h2 className="mt-3 text-3xl font-black text-navy-900 sm:text-4xl">Keep the office work moving after the job is done.</h2>
+              <p className="text-sm font-black uppercase text-amber-600">Everything needed after the service call</p>
+              <h2 className="mt-3 text-3xl font-black text-navy-900 sm:text-4xl">Keep jobs, customers, invoices, and payments in one place.</h2>
             </div>
             <div className="mt-10 grid gap-4 md:grid-cols-2">
               {benefits.map((benefit, index) => (
@@ -190,7 +190,7 @@ export default function LandingPage() {
                 <p className="text-sm font-black uppercase text-amber-600">How it works</p>
                 <h2 className="mt-3 text-3xl font-black text-navy-900 sm:text-4xl">From service call to paid invoice.</h2>
                 <p className="mt-4 text-base leading-7 text-gray-600">
-                  TradeDesk keeps the flow simple, so you can send a professional invoice without turning admin work into another job.
+                  TradeDesk keeps the flow simple, so independent trade contractors can send professional invoices without turning admin work into another job.
                 </p>
               </div>
               <ol className="grid gap-4 sm:grid-cols-2">
@@ -260,7 +260,7 @@ export default function LandingPage() {
 
         <section className="px-4 py-16 sm:px-6">
           <div className="mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl font-black text-navy-900">Ready to send cleaner invoices?</h2>
+            <h2 className="text-3xl font-black text-navy-900">Ready to run service work with less admin?</h2>
             <p className="mt-4 text-base leading-7 text-gray-600">
               Start your free trial and set up your first customer, job, and invoice today.
             </p>
@@ -282,7 +282,7 @@ export default function LandingPage() {
             <BrandMark />
             <div>
               <p className="text-sm font-black text-navy-900">TradeDesk</p>
-              <p className="text-xs text-gray-500">For solo electricians and small electrical contractors.</p>
+              <p className="text-xs text-gray-500">For solo and small home-service contractors.</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-gray-500">
