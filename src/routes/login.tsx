@@ -27,8 +27,11 @@ export default function LoginPage() {
   }, [user, loading, navigate])
 
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('mode') === 'forgot') {
+    const requestedMode = new URLSearchParams(location.search).get('mode')
+    if (requestedMode === 'forgot') {
       setMode('forgot')
+    } else if (requestedMode === 'signup') {
+      setMode('signup')
     }
   }, [location.search])
 

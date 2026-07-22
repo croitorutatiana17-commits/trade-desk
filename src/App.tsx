@@ -5,6 +5,7 @@ import { useBilling } from '~/lib/billing'
 import { isSupabaseConfigured } from '~/lib/supabase'
 
 import Dashboard from '~/routes/index'
+import LandingPage from '~/routes/landing'
 import LoginPage from '~/routes/login'
 import ResetPasswordPage from '~/routes/reset-password'
 import SubscribePage from '~/routes/subscribe'
@@ -66,11 +67,17 @@ function MissingEnvBanner() {
 const AUTH_ROUTES = ['/login', '/reset-password', '/subscribe']
 const PUBLIC_ROUTES = ['/invoice', '/privacy', '/terms', '/support']
 
+function HomePage() {
+  const { user } = useAuth()
+  return user ? <Dashboard /> : <LandingPage />
+}
+
 function AppShell() {
   const location = useLocation()
   const path = location.pathname
   const isAuthRoute = AUTH_ROUTES.some(r => path === r || path.startsWith(r))
   const isPublicRoute = PUBLIC_ROUTES.some(r => path === r || path.startsWith(r + '/'))
+  const isLandingRoute = path === '/'
 
   const { user, loading: authLoading } = useAuth()
   const billing = useBilling()
@@ -78,8 +85,8 @@ function AppShell() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!user && !isAuthRoute && !isPublicRoute) navigate('/login')
-  }, [user, authLoading, isAuthRoute, isPublicRoute, navigate])
+    if (!user && !isLandingRoute && !isAuthRoute && !isPublicRoute) navigate('/login')
+  }, [user, authLoading, isLandingRoute, isAuthRoute, isPublicRoute, navigate])
 
   useEffect(() => {
     if (!user || billing.status === 'loading' || isAuthRoute || isPublicRoute) return
@@ -101,7 +108,7 @@ function AppShell() {
       )}
       <main className={isAuthRoute || isPublicRoute ? 'flex-1' : 'flex-1 pb-20'}>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
