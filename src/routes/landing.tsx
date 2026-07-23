@@ -205,6 +205,23 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="border-y border-gray-200 bg-white px-4 py-16 sm:px-6">
+          <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase text-amber-600">Built for people who do the work</p>
+              <h2 className="mt-3 text-3xl font-black text-navy-900 sm:text-4xl">
+                Simple tools for service businesses that need to get paid.
+              </h2>
+            </div>
+            <p className="text-base leading-8 text-gray-600">
+              TradeDesk is a simple job management, invoicing, and payment platform for independent home-service
+              contractors and small service businesses. It is built for the everyday flow of keeping customer details
+              organized, tracking service work, sending professional invoices, accepting card payments, and seeing what
+              has been paid.
+            </p>
+          </div>
+        </section>
+
         <section id="pricing" className="bg-navy-900 px-4 py-20 text-white sm:px-6">
           <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_0.8fr] lg:items-center">
             <div>
@@ -282,13 +299,22 @@ export default function LandingPage() {
             <BrandMark />
             <div>
               <p className="text-sm font-black text-navy-900">TradeDesk</p>
-              <p className="text-xs text-gray-500">For solo and small home-service contractors.</p>
+              <a href="mailto:support@tradedeshq.com" className="text-xs font-bold text-gray-500 hover:text-navy-900">
+                support@tradedeshq.com
+              </a>
+              <p className="mt-1 text-xs text-gray-500">© 2026 TradeDesk</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-gray-500">
-            <Link to="/privacy" className="hover:text-navy-900">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-navy-900">Terms of Service</Link>
-            <Link to="/support" className="hover:text-navy-900">Support</Link>
+            <Link to="/privacy" className="hover:text-navy-900">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-navy-900">
+              Terms
+            </Link>
+            <Link to="/support" className="hover:text-navy-900">
+              Support
+            </Link>
           </div>
         </div>
       </footer>
